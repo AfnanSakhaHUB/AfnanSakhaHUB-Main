@@ -402,7 +402,7 @@ local function CreateScriptRow(name, defaultState)
 							end
 						end)
 
-								elseif name == "Auto Task" then
+elseif name == "Auto Task" then
 	if isOn then
 		task.spawn(function()
 			local visitedTasks = {}
