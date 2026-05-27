@@ -367,21 +367,46 @@ local function CreateScriptRow(name, defaultState)
 				end
 			end
 
-			elseif name == "Auto Complete Obby" then
+		elseif name == "Auto Complete Obby" then
 			if isOn then
 				task.spawn(function()
+					local cooldown = 0 -- Timer internal untuk fallback 5.5 menit
 					while isOn do
 						pcall(function()
-							if LocalPlayer and LocalPlayer.Team and LocalPlayer.Team.Name == "Lobby" then
-								local lobby = workspace:FindFirstChild("Lobby")
-								local obbyEnd = lobby and lobby:FindFirstChild("Obby") and lobby.Obby:FindFirstChild("ObbyEndPart")
-								if obbyEelseifnd and humPart then
-									firetouchinterest(humPart, obbyEnd, 0)
-									firetouchinterest(humPart, obbyEnd, 1)
+							if humPart and char then
+								-- Cek apakah saat ini pemain sedang berada di tim "Lobby"
+								local isLobby = LocalPlayer.Team and LocalPlayer.Team.Name == "Lobby"
+								
+								-- Pemicu: Jika kembali ke tim Lobby ATAU cooldown 5.5 menit sudah habis (cooldown <= 0)
+								if isLobby or cooldown <= 0 then
+									local obbyEnd = workspace:FindFirstChild("ObbyEndPart", true)
+									local hardObbyEnd = workspace:FindFirstChild("HardObbyEndPart", true)
+									
+									-- 1. Teleport ke ObbyEndPart
+									if obbyEnd then
+										humPart.CFrame = obbyEnd.CFrame + Vector3.new(0, 2, 0)
+										task.wait(1) -- Tunggu 1 detik
+									end
+									
+									-- 2. Teleport ke HardObbyEndPart
+									if hardObbyEnd and isOn then
+										humPart.CFrame = hardObbyEnd.CFrame + Vector3.new(0, 2, 0)
+									end
+									
+									-- Reset cooldown kembali ke 5.5 menit (330 detik)
+									cooldown = 330
+									
+									-- Jeda aman 5 detik agar script tidak spam TP saat game sedang memproses perpindahan tim kamu
+									task.wait(5)
 								end
 							end
 						end)
+						
 						task.wait(1)
+						-- Mengurangi timer cooldown setiap detiknya
+						if cooldown > 0 then
+							cooldown = cooldown - 1
+						end
 					end
 				end)
 			end
