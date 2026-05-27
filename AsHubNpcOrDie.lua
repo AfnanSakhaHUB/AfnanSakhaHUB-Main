@@ -386,43 +386,66 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			end
 
-				elseif name == "Auto Task" then
+		elseif name == "Auto Task" then
 			if isOn then
 				task.spawn(function()
+					local visitedTasks = {} -- Tabel untuk mengingat Hitbox yang sudah dikunjungi
 					while isOn do
 						pcall(function()
 							if humPart and char then
-								-- 1. Cari part yang bernama "E key" di workspace
-								local targetPart = nil
+								local targetHitbox = nil
+								local availableTasks = {}
+
+								-- 1. Scan semua part bernama "Hitbox" yang belum pernah dikunjungi
 								for _, v in pairs(workspace:GetDescendants()) do
-									if v:IsA("BasePart") and v.Name == "E key" then
-										targetPart = v
-										break
+									if v:IsA("BasePart") and v.Name == "Hitbox" then
+										if not visitedTasks[v] then
+											table.insert(availableTasks, v)
+										end
 									end
 								end
 								
-								-- 2. Jika part ditemukan, lakukan aksi
-								if targetPart then
-									-- Teleport pemain ke lokasi part "E key"
-									humPart.CFrame = targetPart.CFrame + Vector3.new(0, 2, 0)
-									task.wait(0.2) -- Jeda pendek agar posisi stabil setelah TP
+								-- Jika semua Hitbox sudah selesai dikunjungi, reset ingatan agar bisa mulai dari awal lagi
+								if #availableTasks == 0 then
+									visitedTasks = {}
+									for _, v in pairs(workspace:GetDescendants()) do
+										if v:IsA("BasePart") and v.Name == "Hitbox" then
+											table.insert(availableTasks, v)
+										end
+									end
+								end
+
+								-- 2. Pilih salah satu Hitbox yang tersedia (antrean pertama)
+								if #availableTasks > 0 then
+									targetHitbox = availableTasks[1]
+								end
+								
+								-- 3. Eksekusi Teleport dan Tekan E
+								if targetHitbox then
+									-- Tandai Hitbox ini sudah dikunjungi supaya loop berikutnya mencari tempat lain
+									visitedTasks[targetHitbox] = true
 									
-									-- Cari ProximityPrompt di part tersebut atau di induknya
-									local prompt = targetPart:FindFirstChildOfClass("ProximityPrompt") or targetPart.Parent:FindFirstChildOfClass("ProximityPrompt")
+									-- Teleport ke posisi Hitbox tersebut
+									humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
+									task.wait(0.3) -- Jeda pendek setelah TP agar posisi karakter stabil
+									
+									-- Cari ProximityPrompt di dalam Hitbox atau di sekitar induknya
+									local prompt = targetHitbox:FindFirstChildOfClass("ProximityPrompt") 
+										or targetHitbox.Parent:FindFirstChildOfClass("ProximityPrompt")
+										or targetHitbox.Parent:FindFirstChild("ProximityPrompt", true)
 									
 									if prompt and isOn then
-										prompt.HoldDuration = 0 -- Mengabaikan durasi asli agar instan masuk ke proses holding
-										prompt:InputHoldBegin()  -- Mulai menekan E
-										task.wait(10)            -- Menekan selama 10 detik sesuai permintaan
-										prompt:InputHoldEnd()    -- Lepas tombol E
+										prompt.HoldDuration = 0
+										prompt:InputHoldBegin() -- Tekan E
+										task.wait(10)           -- Tahan selama 10 detik
+										prompt:InputHoldEnd()   -- Lepas E
 									else
-										-- Jika tidak ada prompt fisik, tetap tunggu 10 detik sebelum loop mendeteksi ulang
-										task.wait(10)
+										task.wait(1) -- Jika prompt tidak ditemukan, tunggu 1 detik lalu cari task lain
 									end
 								end
 							end
 						end)
-						task.wait(1)
+						task.wait(0.5)
 					end
 				end)
 			end
@@ -433,10 +456,10 @@ local function CreateScriptRow(name, defaultState)
 					while isOn do
 						pcall(function()
 							if humPart and char then
-								local maxDistance = 50 -- Jarak deteksi (Akan kabur jika Sheriff berada di bawah 50 studs)
+								local maxDistance = 50 -- Jarak deteksi Sheriff
 								local sheriffNear = false
 								
-								-- 1. Deteksi keberadaan Sheriff di sekitar pemain
+								-- 1. Deteksi keberadaan Sheriff terdekat
 								for _, p in pairs(game:GetService("Players"):GetPlayers()) do
 									if p ~= game:GetService("Players").LocalPlayer and p.Team and p.Team.Name == "Sheriffs" then
 										if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
@@ -449,23 +472,34 @@ local function CreateScriptRow(name, defaultState)
 									end
 								end
 								
-								-- 2. Jika ada Sheriff mendekat, eksekusi teleportasi darurat
+								-- 2. Jika Sheriff mendekat, kabur ke Lobby
 								if sheriffNear then
-									local oldCFrame = humPart.CFrame -- Simpan koordinat lokasi saat ini
+									-- Otomatis mencari objek bernama "Lobby" atau "SpawnLocation" di Workspace
+									local lobby = workspace:FindFirstChild("Lobby", true) 
+										or workspace:FindFirstChild("SpawnLocation", true) 
+										or workspace:FindFirstChild("Spawn", true)
 									
-									-- Teleportasi ke koordinat yang sangat jauh/aman di udara kosong
-									humPart.CFrame = CFrame.new(9999, 5000, 9999) 
-									
-									task.wait(3) -- Menunggu selama 3 detik di tempat aman
-									
-									-- Teleportasi balik ke posisi semula
-									if humPart then
-										humPart.CFrame = oldCFrame
+									if lobby then
+										local oldCFrame = humPart.CFrame -- Simpan posisi awal kamu bekerja
+										
+										-- Teleport pemain ke Lobby
+										if lobby:IsA("Model") then
+											humPart.CFrame = lobby:GetPivot() + Vector3.new(0, 3, 0)
+										else
+											humPart.CFrame = lobby.CFrame + Vector3.new(0, 3, 0)
+										end
+										
+										task.wait(3) -- Tunggu aman di lobby selama 3 detik
+										
+										-- Teleport balik ke posisi semula jika fitur masih aktif
+										if isOn and humPart then
+											humPart.CFrame = oldCFrame
+										end
 									end
 								end
 							end
 						end)
-						task.wait(0.5) -- Mengecek keberadaan Sheriff setiap 0.5 detik sekali agar responsif
+						task.wait(0.5)
 					end
 				end)
 			end
