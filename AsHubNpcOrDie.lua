@@ -551,44 +551,53 @@ local function CreateScriptRow(name, defaultState)
 -- SEKARANG MASUKKAN INI DI DALAM STRUKTUR TOGEL MENU HUB KAMU:
 elseif name == "Inf Stamina" then
 	_G.InfStaminaActive = isOn
-	-- Nilai _G.InfStaminaActive sekarang langsung mengontrol
+	
 	if isOn then
+		local RunService = game:GetService("RunService")
 		
-		rawMeta.__index = newcclosure(function(self, key)
-			-- Jika fitur aktif, dan script game sedang mengecek properti "Team" milik kamu
-			if _G.InfStaminaActive and self == game:GetService("Players").LocalPlayer and key == "Team" then
-				local lobbyTeam = game:GetService("Teams"):FindFirstChild("Lobby")
-				if lobbyTeam then
-					return lobbyTeam -- Bohongi script game, katakan kita ada di tim Lobby
-				end
-			end
-			return oldIndex(self, key)
-		end)
-		setreadonly(rawMeta, true)
-	end
-				
-
-		elseif name == "Noclip" then
-			if isOn then
-				local function NoclipLoop()
-					if char then
-						for _, child in pairs(char:GetDescendants()) do
-							if child:IsA("BasePart") and child.CanCollide == true then
-								child.CanCollide = false
-							end
-						end
-					end
-				end
-				_G.NoclippingHook = RunService.Stepped:Connect(NoclipLoop)
-			else
-				if _G.NoclippingHook then
-					_G.NoclippingHook:Disconnect()
-					_G.NoclippingHook = nil
-				end
-			end
+		-- Bersihkan koneksi lama jika ada untuk mencegah penumpukan memori
+		if _G.StaminaConnection then 
+			_G.StaminaConnection:Disconnect() 
 		end
-	end)
-end
+		
+		-- Loop super cepat (secepat FPS Game) untuk memaksa nilai stamina
+		_G.StaminaConnection = RunService.RenderStepped:Connect(function()
+			if not _G.InfStaminaActive then
+				if _G.StaminaConnection then
+					_G.StaminaConnection:Disconnect()
+					_G.StaminaConnection = nil
+				end
+				return
+			end
+			
+			-- Mengunci nilai stamina langsung ke objek internal UI game
+			pcall(function()
+				local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+				local modules = playerGui and playerGui:FindFirstChild("Modules")
+				local gameplay = modules and modules:FindFirstChild("Gameplay")
+				local sprint = gameplay and gameplay:FindFirstChild("Sprint")
+				local stamina = sprint and sprint:FindFirstChild("Stamina")
+				
+				if stamina then
+					stamina.Value = 999999 -- Terkunci mati di angka ini setiap milidetik
+				end
+			end)
+		end)
+	else
+		-- JIKA TOGGLE DIMATIKAN (OFF)
+		if _G.StaminaConnection then
+			_G.StaminaConnection:Disconnect()
+			_G.StaminaConnection = nil
+		end
+		
+		-- Kembalikan stamina ke angka normal agar tidak lelah
+		pcall(function()
+			local stamina = LocalPlayer.PlayerGui.Modules.Gameplay.Sprint:FindFirstChild("Stamina")
+			if stamina then 
+				stamina.Value = 100 
+			end
+		end)
+	end
 
 local function CreateScriptButton(name, callback)
 	local Row = Instance.new("Frame")
