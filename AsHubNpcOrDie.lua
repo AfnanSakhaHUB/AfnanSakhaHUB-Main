@@ -411,75 +411,95 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			end
 
-			elseif name == "Auto Task" then
-			if isOn then
-				task.spawn(function()
-					local visitedTasks = {}
-					while isOn do
-						pcall(function()
-							-- JIKA SHERIFF DEKAT: Berhenti dan tunggu sampai aman
-							if _G.SheriffNear then 
-								task.wait(0.5) 
-								return 
+elseif name == "Auto Task" then
+	if isOn then
+		task.spawn(function()
+			local visitedTasks = {}
+			while isOn do
+				pcall(function()
+					-- JIKA SHERIFF DEKAT: Berhenti dan tunggu sampai aman
+					if _G.SheriffNear then 
+						task.wait(0.5) 
+						return 
+					end
+
+					if humPart and char then
+						local targetHitbox = nil
+						local yellowTasks = {} -- Keranjang Kuning (Prioritas 1)
+						local whiteTasks = {}  -- Keranjang Putih (Prioritas 2)
+
+						-- Fungsi untuk mengecek dan mengelompokkan warna Hitbox
+						local function kelompolkanHitbox(v)
+							local colorName = string.lower(v.BrickColor.Name)
+							-- Cek komponen RGB & nama warna untuk memastikan itu Kuning/Emas
+							local isYellow = string.find(colorName, "yellow") or string.find(colorName, "gold") or (v.Color.R > 0.6 and v.Color.G > 0.6 and v.Color.B < 0.4)
+							-- Cek jika itu Putih
+							local isWhite = string.find(colorName, "white") or (v.Color.R > 0.8 and v.Color.G > 0.8 and v.Color.B > 0.8)
+
+							if isYellow then
+								table.insert(yellowTasks, v)
+							elseif isWhite then
+								table.insert(whiteTasks, v)
 							end
+						end
 
-							if humPart and char then
-								local targetHitbox = nil
-								local availableTasks = {}
-
-								for _, v in pairs(workspace:GetDescendants()) do
-									if v:IsA("BasePart") and v.Name == "Hitbox" then
-										if not visitedTasks[v] then
-											table.insert(availableTasks, v)
-										end
-									end
-								end
-								
-								if #availableTasks == 0 then
-									visitedTasks = {}
-									for _, v in pairs(workspace:GetDescendants()) do
-										if v:IsA("BasePart") and v.Name == "Hitbox" then
-											table.insert(availableTasks, v)
-										end
-									end
-								end
-
-								if #availableTasks > 0 then
-									targetHitbox = availableTasks[1]
-								end
-								
-								if targetHitbox then
-									visitedTasks[targetHitbox] = true
-									humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
-									task.wait(0.3)
-									
-									local prompt = targetHitbox:FindFirstChildOfClass("ProximityPrompt") 
-										or targetHitbox.Parent:FindFirstChildOfClass("ProximityPrompt")
-										or targetHitbox.Parent:FindFirstChild("ProximityPrompt", true)
-									
-									-- PERBAIKAN: Membaca status interaksi secara berkala (Bisa di-cancel jika Sheriff datang)
-									if prompt and isOn and not _G.SheriffNear then
-										prompt.HoldDuration = 0
-										prompt:InputHoldBegin() -- Tekan E
-										
-										-- Mengubah wait(5.5) statis menjadi loop dinamis per 0.1 detik
-										local timeElapsed = 0
-										while timeElapsed < 5.5 and isOn and not _G.SheriffNear do
-											task.wait(0.1)
-											timeElapsed = timeElapsed + 0.1
-										end
-										
-										prompt:InputHoldEnd() -- Lepas E
-									else
-										task.wait(0.5)
-									end
+						-- SCAN 1: Cari Hitbox yang belum pernah dikunjungi
+						for _, v in pairs(workspace:GetDescendants()) do
+							if v:IsA("BasePart") and v.Name == "Hitbox" then
+								if not visitedTasks[v] then
+									kelompolkanHitbox(v)
 								end
 							end
-						end)
-						task.wait(0.5)
+						end
+						
+						-- SCAN 2: Jika semua target valid sudah habis dikunjungi, reset list-nya
+						if #yellowTasks == 0 and #whiteTasks == 0 then
+							visitedTasks = {}
+							for _, v in pairs(workspace:GetDescendants()) do
+								if v:IsA("BasePart") and v.Name == "Hitbox" then
+									kelompolkanHitbox(v)
+								end
+							end
+						end
+
+						-- SISTEM PRIORITAS: Dahulukan kuning, kalau tidak ada baru ambil putih
+						if #yellowTasks > 0 then
+							targetHitbox = yellowTasks[1]
+						elseif #whiteTasks > 0 then
+							targetHitbox = whiteTasks[1]
+						end
+						
+						-- Eksekusi Teleport dan Interaksi ProximityPrompt
+						if targetHitbox then
+							visitedTasks[targetHitbox] = true
+							humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
+							task.wait(0.3)
+							
+							local prompt = targetHitbox:FindFirstChildOfClass("ProximityPrompt") 
+								or targetHitbox.Parent:FindFirstChildOfClass("ProximityPrompt")
+								or targetHitbox.Parent:FindFirstChild("ProximityPrompt", true)
+							
+							if prompt and isOn and not _G.SheriffNear then
+								prompt.HoldDuration = 0
+								prompt:InputHoldBegin()
+								
+								local timeElapsed = 0
+								while timeElapsed < 5.5 and isOn and not _G.SheriffNear do
+									task.wait(0.1)
+									timeElapsed = timeElapsed + 0.1
+								end
+								
+								prompt:InputHoldEnd()
+							else
+								task.wait(0.5)
+							end
+						end
 					end
 				end)
+				task.wait(0.5)
 			end
+		end)
+	end
 
 		elseif name == "Auto Run when Sherrif is near" then
 			if isOn then
