@@ -8,9 +8,6 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Lighting = game:GetService("Lighting")
-local Teams = game:GetService("Teams")
-local LocalPlayer = Players.LocalPlayer
-local LobbyTeam = Teams:FindFirstChild("Lobby")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -29,22 +26,6 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
 		hum.UseJumpPower = true
 	end
 end)
-
--- Proses Hook Metatable dilakukan sekali saja di luar agar tidak menumpuk saat toggle ON/OFF
-local rawMeta = getrawmetatable(game)
-local oldIndex = rawMeta.__index
-setreadonly(rawMeta, false)
-
-rawMeta.__index = newcclosure(function(self, key)
-    -- Jika fitur aktif, dan script game mengecek properti "Team" milik karaktermu
-    if _G.InfStaminaActive and self == LocalPlayer and key == "Team" then
-        if LobbyTeam then
-            return LobbyTeam -- Berikan jawaban palsu secara instan tanpa beban CPU
-        end
-    end
-    return oldIndex(self, key)
-end)
-setreadonly(rawMeta, true)
 
 ----------------------------------------------------
 -- AUTO CLEANUP UI LAMA
@@ -386,7 +367,7 @@ local function CreateScriptRow(name, defaultState)
 				end
 			end
 
-		elseif name == "Auto Complete Obby" then
+				elseif name == "Auto Complete Obby" then
 			if isOn then
 				task.spawn(function()
 					local cooldown = 0 -- Timer internal untuk fallback 5.5 menit
@@ -429,18 +410,23 @@ local function CreateScriptRow(name, defaultState)
 					end
 				end)
 			end
-				
-		elseif name == "Auto Task" then
+
+			elseif name == "Auto Task" then
 			if isOn then
 				task.spawn(function()
-					local visitedTasks = {} -- Tabel untuk mengingat Hitbox yang sudah dikunjungi
+					local visitedTasks = {}
 					while isOn do
 						pcall(function()
+							-- JIKA SHERIFF DEKAT: Berhenti dan tunggu sampai aman
+							if _G.SheriffNear then 
+								task.wait(0.5) 
+								return 
+							end
+
 							if humPart and char then
 								local targetHitbox = nil
 								local availableTasks = {}
 
-								-- 1. Scan semua part bernama "Hitbox" yang belum pernah dikunjungi
 								for _, v in pairs(workspace:GetDescendants()) do
 									if v:IsA("BasePart") and v.Name == "Hitbox" then
 										if not visitedTasks[v] then
@@ -449,7 +435,6 @@ local function CreateScriptRow(name, defaultState)
 									end
 								end
 								
-								-- Jika semua Hitbox sudah selesai dikunjungi, reset ingatan agar bisa mulai dari awal lagi
 								if #availableTasks == 0 then
 									visitedTasks = {}
 									for _, v in pairs(workspace:GetDescendants()) do
@@ -459,32 +444,34 @@ local function CreateScriptRow(name, defaultState)
 									end
 								end
 
-								-- 2. Pilih salah satu Hitbox yang tersedia (antrean pertama)
 								if #availableTasks > 0 then
 									targetHitbox = availableTasks[1]
 								end
 								
-								-- 3. Eksekusi Teleport dan Tekan E
 								if targetHitbox then
-									-- Tandai Hitbox ini sudah dikunjungi supaya loop berikutnya mencari tempat lain
 									visitedTasks[targetHitbox] = true
-									
-									-- Teleport ke posisi Hitbox tersebut
 									humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
-									task.wait(0.3) -- Jeda pendek setelah TP agar posisi karakter stabil
+									task.wait(0.3)
 									
-									-- Cari ProximityPrompt di dalam Hitbox atau di sekitar induknya
 									local prompt = targetHitbox:FindFirstChildOfClass("ProximityPrompt") 
 										or targetHitbox.Parent:FindFirstChildOfClass("ProximityPrompt")
 										or targetHitbox.Parent:FindFirstChild("ProximityPrompt", true)
 									
-									if prompt and isOn then
+									-- PERBAIKAN: Membaca status interaksi secara berkala (Bisa di-cancel jika Sheriff datang)
+									if prompt and isOn and not _G.SheriffNear then
 										prompt.HoldDuration = 0
 										prompt:InputHoldBegin() -- Tekan E
-										task.wait(5.5)           -- Tahan selama 10 detik
-										prompt:InputHoldEnd()   -- Lepas E
+										
+										-- Mengubah wait(5.5) statis menjadi loop dinamis per 0.1 detik
+										local timeElapsed = 0
+										while timeElapsed < 5.5 and isOn and not _G.SheriffNear do
+											task.wait(0.1)
+											timeElapsed = timeElapsed + 0.1
+										end
+										
+										prompt:InputHoldEnd() -- Lepas E
 									else
-										task.wait(1) -- Jika prompt tidak ditemukan, tunggu 1 detik lalu cari task lain
+										task.wait(0.5)
 									end
 								end
 							end
@@ -500,13 +487,21 @@ local function CreateScriptRow(name, defaultState)
 					while isOn do
 						pcall(function()
 							if humPart and char then
-								local maxDistance = 50 -- Jarak deteksi Sheriff
+								local maxDistance = 60 -- Jarak diperluas ke 60 studs agar lebih sigap kabur
 								local sheriffNear = false
 								
-								-- 1. Deteksi keberadaan Sheriff terdekat
+								-- 1. Deteksi Ganda Akurat (Nama Tim mengandung kata 'sheriff' ATAU memegang Senjata)
 								for _, p in pairs(game:GetService("Players"):GetPlayers()) do
-									if p ~= game:GetService("Players").LocalPlayer and p.Team and p.Team.Name == "Sheriffs" then
-										if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+									if p ~= game:GetService("Players").LocalPlayer then
+										local isSheriff = false
+										
+										if p.Team and string.find(p.Team.Name:lower(), "sheriff") then
+											isSheriff = true
+										elseif p.Character and (p.Character:FindFirstChild("Gun") or p.Character:FindFirstChild("Revolver") or p.Character:FindFirstChildWhichIsA("Tool")) then
+											isSheriff = true
+										end
+										
+										if isSheriff and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
 											local dist = (humPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
 											if dist <= maxDistance then
 												sheriffNear = true
@@ -516,88 +511,86 @@ local function CreateScriptRow(name, defaultState)
 									end
 								end
 								
-								-- 2. Jika Sheriff mendekat, kabur ke Lobby
+								-- 2. Proses Teleportasi Darurat
 								if sheriffNear then
-									-- Otomatis mencari objek bernama "Lobby" atau "SpawnLocation" di Workspace
+									_G.SheriffNear = true -- Mengunci Auto Task agar melepaskan tombol E
+									
 									local lobby = workspace:FindFirstChild("Lobby", true) 
 										or workspace:FindFirstChild("SpawnLocation", true) 
 										or workspace:FindFirstChild("Spawn", true)
 									
 									if lobby then
-										local oldCFrame = humPart.CFrame -- Simpan posisi awal kamu bekerja
+										local oldCFrame = humPart.CFrame -- Simpan posisi aman tempat kerja sebelumnya
 										
-										-- Teleport pemain ke Lobby
+										-- Pindah Instan ke Lobby
 										if lobby:IsA("Model") then
 											humPart.CFrame = lobby:GetPivot() + Vector3.new(0, 3, 0)
 										else
 											humPart.CFrame = lobby.CFrame + Vector3.new(0, 3, 0)
 										end
 										
-										task.wait(3) -- Tunggu aman di lobby selama 3 detik
+										task.wait(3) -- Sembunyi di lobby selama 3 detik
 										
-										-- Teleport balik ke posisi semula jika fitur masih aktif
-										if isOn and humPart then
+										-- Kembali ke tempat kerja jika kondisi aman dan fitur masih aktif
+										if isOn and humPart and not sheriffNear then
 											humPart.CFrame = oldCFrame
 										end
 									end
+									_G.SheriffNear = false -- Membuka kembali ijin jalan untuk Auto Task
 								end
 							end
 						end)
-						task.wait(0.5)
+						task.wait(0.1) -- PERBAIKAN FATAL: Deteksi dipercepat ke 0.1 detik (Instan / Refleks Dewa)
+					end
+					_G.SheriffNear = false
+				end)
+			else
+				_G.SheriffNear = false
+		end
+
+		elseif name == "Inf Stamina" then
+			if isOn then
+				task.spawn(function()
+					while isOn do
+						pcall(function()
+							local sprint = LocalPlayer.PlayerGui:FindFirstChild("Modules") and LocalPlayer.PlayerGui.Modules:FindFirstChild("Gameplay") and LocalPlayer.PlayerGui.Modules.Gameplay:FindFirstChild("Sprint")
+							if sprint and sprint:FindFirstChild("Stamina") then
+								sprint.Stamina.Value = 9e9
+							end
+						end)
+						task.wait(0.6)
+					end
+				end)
+			else
+				pcall(function()
+					local sprint = LocalPlayer.PlayerGui.Modules.Gameplay.Sprint
+					if sprint and sprint:FindFirstChild("Stamina") then
+						sprint.Stamina.Value = 6
 					end
 				end)
 			end
 
--- SEKARANG MASUKKAN INI DI DALAM STRUKTUR TOGEL MENU HUB KAMU:
-elseif name == "Inf Stamina" then
-	_G.InfStaminaActive = isOn
-	
-	if isOn then
-		local RunService = game:GetService("RunService")
-		
-		-- Bersihkan koneksi lama jika ada untuk mencegah penumpukan memori
-		if _G.StaminaConnection then 
-			_G.StaminaConnection:Disconnect() 
-		end
-		
-		-- Loop super cepat (secepat FPS Game) untuk memaksa nilai stamina
-		_G.StaminaConnection = RunService.RenderStepped:Connect(function()
-			if not _G.InfStaminaActive then
-				if _G.StaminaConnection then
-					_G.StaminaConnection:Disconnect()
-					_G.StaminaConnection = nil
+		elseif name == "Noclip" then
+			if isOn then
+				local function NoclipLoop()
+					if char then
+						for _, child in pairs(char:GetDescendants()) do
+							if child:IsA("BasePart") and child.CanCollide == true then
+								child.CanCollide = false
+							end
+						end
+					end
 				end
-				return
-			end
-			
-			-- Mengunci nilai stamina langsung ke objek internal UI game
-			pcall(function()
-				local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-				local modules = playerGui and playerGui:FindFirstChild("Modules")
-				local gameplay = modules and modules:FindFirstChild("Gameplay")
-				local sprint = gameplay and gameplay:FindFirstChild("Sprint")
-				local stamina = sprint and sprint:FindFirstChild("Stamina")
-				
-				if stamina then
-					stamina.Value = 999999 -- Terkunci mati di angka ini setiap milidetik
+				_G.NoclippingHook = RunService.Stepped:Connect(NoclipLoop)
+			else
+				if _G.NoclippingHook then
+					_G.NoclippingHook:Disconnect()
+					_G.NoclippingHook = nil
 				end
-			end)
-		end)
-	else
-		-- JIKA TOGGLE DIMATIKAN (OFF)
-		if _G.StaminaConnection then
-			_G.StaminaConnection:Disconnect()
-			_G.StaminaConnection = nil
-		end
-		
-		-- Kembalikan stamina ke angka normal agar tidak lelah
-		pcall(function()
-			local stamina = LocalPlayer.PlayerGui.Modules.Gameplay.Sprint:FindFirstChild("Stamina")
-			if stamina then 
-				stamina.Value = 100 
 			end
-		end)
-	end
+		end
+	end)
+end
 
 local function CreateScriptButton(name, callback)
 	local Row = Instance.new("Frame")
@@ -688,7 +681,7 @@ end)
 local AntiAfkBtn = Instance.new("TextButton")
 AntiAfkBtn.Size = UDim2.new(1,-30,0,40)
 AntiAfkBtn.Position = UDim2.new(0,15,1,-50)
-AntiAfkBtn.BackgroundColor3 = Color3.fromRGB(20,40,70)
+AntiAfkBtn.Position = UDim2.new(0,20,0.5,-27)
 AntiAfkBtn.Text = "ACTIVATE ANTI AFK"
 AntiAfkBtn.TextColor3 = Color3.fromRGB(0,200,255)
 AntiAfkBtn.TextSize = 13
