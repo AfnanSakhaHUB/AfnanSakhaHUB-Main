@@ -679,10 +679,10 @@ end)
 -- BOTTOM CONTROLS & UTILITIES
 ----------------------------------------------------
 local AntiAfkBtn = Instance.new("TextButton")
-AntiAfkBtn.Size = UDim2.new(0.23,0,0,40)
+AntiAfkBtn.Size = UDim2.new(1,-30,0,40)
 AntiAfkBtn.Position = UDim2.new(0.74,0,1,-50)
 AntiAfkBtn.BackgroundColor3 = Color3.fromRGB(20,40,70)
-AntiAfkBtn.Text = "PASTE BIN"
+AntiAfkBtn.Text = "Anti AFK Unactive ❌"
 AntiAfkBtn.TextColor3 = Color3.fromRGB(0,200,255)
 AntiAfkBtn.TextSize = 13
 AntiAfkBtn.Font = Enum.Font.GothamBold
