@@ -9,7 +9,6 @@ local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-local LocalPlayer = game.Players.LocalPlayer
 
 ----------------------------------------------------
 -- AUTO CLEANUP
@@ -472,22 +471,26 @@ local function CreateScriptRow(name, defaultState)
 			
 			if isOn then
 				-- Loop ringan menggunakan Heartbeat (berjalan di setiap frame fisika)
-				task.spawn(function()
-					while _G.SpeedMonitorActive do
-						local mySpeed = ambilKecepatan(LocalPlayer)
-						
-						-- Cari tahu juga setelan WalkSpeed asli dari game untuk perbandingan
-						local maxWalkSpeed = 0
-						if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-							maxWalkSpeed = math.round(LocalPlayer.Character.Humanoid.WalkSpeed)
-						end
-						
-						-- Mengubah teks label row UI kamu secara real-time
-						Label.Text = string.format("Speed Monitor [Real: %d | Max: %d]", mySpeed, maxWalkSpeed)
-						
-						task.wait(0.1) -- Di-refresh setiap 0.1 detik agar tidak lag dan tetap responsif
-					end
-				end)
+            task.spawn(function()
+                while _G.SpeedMonitorActive do
+                    -- 1. Hitung kecepatan asli karakter secara real-time di sini
+                    local mySpeed = 0
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                        mySpeed = math.round(LocalPlayer.Character.HumanoidRootPart.Velocity.Magnitude)
+                    end
+
+                    -- 2. Hitung batas WalkSpeed asli dari game
+                    local maxWalkSpeed = 0
+                    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                        maxWalkSpeed = math.round(LocalPlayer.Character.Humanoid.WalkSpeed)
+                    end
+                    
+                    -- 3. Update tulisan di UI Hub kamu
+                    Label.Text = string.format("Speed Monitor [Real: %d | Max: %d]", mySpeed, maxWalkSpeed)
+                    task.wait(0.1)
+                end
+            end)
+
 			else
 				-- Jika dimatikan, kembalikan teks ke nama semula
 				Label.Text = "Speed Monitor (OFF)"
