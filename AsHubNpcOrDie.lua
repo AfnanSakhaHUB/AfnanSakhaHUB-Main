@@ -8,6 +8,9 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Lighting = game:GetService("Lighting")
+local Teams = game:GetService("Teams")
+local LocalPlayer = Players.LocalPlayer
+local LobbyTeam = Teams:FindFirstChild("Lobby")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -26,6 +29,22 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
 		hum.UseJumpPower = true
 	end
 end)
+
+-- Proses Hook Metatable dilakukan sekali saja di luar agar tidak menumpuk saat toggle ON/OFF
+local rawMeta = getrawmetatable(game)
+local oldIndex = rawMeta.__index
+setreadonly(rawMeta, false)
+
+rawMeta.__index = newcclosure(function(self, key)
+    -- Jika fitur aktif, dan script game mengecek properti "Team" milik karaktermu
+    if _G.InfStaminaActive and self == LocalPlayer and key == "Team" then
+        if LobbyTeam then
+            return LobbyTeam -- Berikan jawaban palsu secara instan tanpa beban CPU
+        end
+    end
+    return oldIndex(self, key)
+end)
+setreadonly(rawMeta, true)
 
 ----------------------------------------------------
 -- AUTO CLEANUP UI LAMA
@@ -529,14 +548,11 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			end
 
+-- SEKARANG MASUKKAN INI DI DALAM STRUKTUR TOGEL MENU HUB KAMU:
 elseif name == "Inf Stamina" then
 	_G.InfStaminaActive = isOn
-	
+	-- Nilai _G.InfStaminaActive sekarang langsung mengontrol
 	if isOn then
-		-- METODE METATABLE HOOK (Memanfaatkan celah tim Lobby)
-		local rawMeta = getrawmetatable(game)
-		local oldIndex = rawMeta.__index
-		setreadonly(rawMeta, false)
 		
 		rawMeta.__index = newcclosure(function(self, key)
 			-- Jika fitur aktif, dan script game sedang mengecek properti "Team" milik kamu
