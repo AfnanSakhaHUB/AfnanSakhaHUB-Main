@@ -529,27 +529,40 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			end
 
-		elseif name == "Inf Stamina" then
-			if isOn then
-				task.spawn(function()
-					while isOn do
-						pcall(function()
-							local sprint = LocalPlayer.PlayerGui:FindFirstChild("Modules") and LocalPlayer.PlayerGui.Modules:FindFirstChild("Gameplay") and LocalPlayer.PlayerGui.Modules.Gameplay:FindFirstChild("Sprint")
-							if sprint and sprint:FindFirstChild("Stamina") then
-								sprint.Stamina.Value = 999999
-							end
-						end)
-						task.wait(0.6)
-					end
-				end)
-			else
+elseif name == "Inf Stamina" then
+	_G.InfStaminaActive = isOn
+	if isOn then
+		task.spawn(function()
+			-- Loop berjalan selama status toggle bernilai TRUE
+			while _G.InfStaminaActive do
 				pcall(function()
-					local sprint = LocalPlayer.PlayerGui.Modules.Gameplay.Sprint
-					if sprint and sprint:FindFirstChild("Stamina") then
-						sprint.Stamina.Value = 6
+					local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+					local modules = playerGui and playerGui:FindFirstChild("Modules")
+					local gameplay = modules and modules:FindFirstChild("Gameplay")
+					local sprint = gameplay and gameplay:FindFirstChild("Sprint")
+					local stamina = sprint and sprint:FindFirstChild("Stamina")
+					
+					if stamina then
+						stamina.Value = 999999 -- Mengunci stamina menjadi 999999
 					end
 				end)
+				task.wait(0.1) -- Refresh dipercepat menjadi 0.1 detik agar anti-drop
 			end
+		end)
+	else
+		-- Jika dimatikan (OFF)
+		pcall(function()
+			local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+			local modules = playerGui and playerGui:FindFirstChild("Modules")
+			local gameplay = modules and modules:FindFirstChild("Gameplay")
+			local sprint = gameplay and gameplay:FindFirstChild("Sprint")
+			local stamina = sprint and sprint:FindFirstChild("Stamina")
+			
+			if stamina then
+				stamina.Value = 100 -- Mengembalikan stamina ke angka normal (100)
+			end
+		end)
+	end
 
 		elseif name == "Noclip" then
 			if isOn then
