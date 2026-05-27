@@ -367,7 +367,7 @@ local function CreateScriptRow(name, defaultState)
 				end
 			end
 
-		elseif name == "Auto Complete Obby" then
+		 name == "Auto Complete Obby" then
 			if isOn then
 				task.spawn(function()
 					while isOn do
@@ -375,7 +375,7 @@ local function CreateScriptRow(name, defaultState)
 							if LocalPlayer and LocalPlayer.Team and LocalPlayer.Team.Name == "Lobby" then
 								local lobby = workspace:FindFirstChild("Lobby")
 								local obbyEnd = lobby and lobby:FindFirstChild("Obby") and lobby.Obby:FindFirstChild("ObbyEndPart")
-								if obbyEnd and humPart then
+								if obbyEelseifnd and humPart then
 									firetouchinterest(humPart, obbyEnd, 0)
 									firetouchinterest(humPart, obbyEnd, 1)
 								end
@@ -437,7 +437,7 @@ local function CreateScriptRow(name, defaultState)
 									if prompt and isOn then
 										prompt.HoldDuration = 0
 										prompt:InputHoldBegin() -- Tekan E
-										task.wait(10)           -- Tahan selama 10 detik
+										task.wait(5.5)           -- Tahan selama 10 detik
 										prompt:InputHoldEnd()   -- Lepas E
 									else
 										task.wait(1) -- Jika prompt tidak ditemukan, tunggu 1 detik lalu cari task lain
@@ -511,7 +511,7 @@ local function CreateScriptRow(name, defaultState)
 						pcall(function()
 							local sprint = LocalPlayer.PlayerGui:FindFirstChild("Modules") and LocalPlayer.PlayerGui.Modules:FindFirstChild("Gameplay") and LocalPlayer.PlayerGui.Modules.Gameplay:FindFirstChild("Sprint")
 							if sprint and sprint:FindFirstChild("Stamina") then
-								sprint.Stamina.Value = 9e9
+								sprint.Stamina.Value = 999999
 							end
 						end)
 						task.wait(0.6)
