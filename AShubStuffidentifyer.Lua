@@ -784,43 +784,33 @@ local function CreateScriptRow(name, defaultState)
 		-- PENGAKTIFAN FITUR
 		if name == "Detector ESP (Radius 5)" then
 			_G.EspBendaDekatActive = isOn
-		elseif name == "UI Identifier" then
-			_G.UIIdentifierActive = isOn
-			if not isOn then
-				CodeViewerFrame.Visible = false
-			end
-		end
-	end)
-end
+	elseif name == "UI Identifier" then
+		_G.UIIdentifierActive = isOn
+		if not isOn then
+			CodeViewerFrame.Visible = false
+		end -- << Menutup 'if not isOn' yang tadi hilang
 
-elseif name == "Speed Monitor" then
-    _G.SpeedMonitorActive = isOn
-    
-    if isOn then
-        local RunService = game:GetService("RunService")
-        
-        -- Loop ringan menggunakan Heartbeat (berjalan di setiap frame fisika)
-        task.spawn(function()
-            while _G.SpeedMonitorActive do
-                local mySpeed = ambilKecepatan(LocalPlayer)
-                
-                -- Cari tahu juga setelan WalkSpeed asli dari game untuk perbandingan
-                local maxWalkSpeed = 0
-                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                    maxWalkSpeed = math.round(LocalPlayer.Character.Humanoid.WalkSpeed)
-                end
-                
-                -- Mengubah teks label row UI kamu secara real-time
-                -- Catatan: Sesuaikan 'Label' dengan nama variabel teks pada fungsi CreateScriptRow kamu
-                Label.Text = string.format("Speed Monitor [Real: %d | Max: %d]", mySpeed, maxWalkSpeed)
-                
-                task.wait(0.1) -- Di-refresh setiap 0.1 detik agar tidak lag dan tetap responsif
-            end
-        end)
-    else
-        -- Jika dimatikan, kembalikan teks ke nama semula
-        Label.Text = "Speed Monitor (OFF)"
-    end
+	elseif name == "Speed Monitor" then
+		_G.SpeedMonitorActive = isOn
+		if isOn then
+			local RunService = game:GetService("RunService")
+			task.spawn(function()
+				while _G.SpeedMonitorActive do
+					local mySpeed = ambilKecepatan(LocalPlayer)
+					local maxWalkSpeed = 0
+					if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+						maxWalkSpeed = math.round(LocalPlayer.Character.Humanoid.WalkSpeed)
+					end
+					Label.Text = string.format("Speed Monitor [Real: %d | Max: %d]", mySpeed, maxWalkSpeed)
+					task.wait(0.1)
+				end
+			end)
+		else -- << 'else' yang terdampar di baris 819 harusnya di sini!
+			Label.Text = "Speed Monitor (OFF)"
+		end -- << Menutup 'if isOn then' milik Speed Monitor
+	end -- << Menutup rangkaian IF-ELSEIF utama (Detector ESP, UI Identifier, Speed Monitor)
+end) -- << Menutup MouseButton1Click (pindahkan ke sini)
+end -- << Menutup fungsi CreateScriptRow (pindahkan ke sini)
 
 -- Menambahkan Fitur Ke Daftar Hub
 CreateScriptRow("Detector ESP (Radius 5)", false)
