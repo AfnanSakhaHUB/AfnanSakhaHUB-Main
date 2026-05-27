@@ -982,13 +982,10 @@ MakeDraggable(RoundToggleBtn)
 MainFrame.Size = UDim2.new(0,0,0,0)
 
 TweenService:Create(
-	MainFrame,
-	TweenInfo.new(0.4, Enum.EasingStyle.Back),
-	{
-		Size = UDim2.new(0,550,0,400)
-	}
-):Play()
-
+        MainFrame,
+        TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+        {Size = UDim2.new(0,550,0,400)}
+    ):Play()
 
 ----------------------------------------------------
 -- LUA ENGINE: SYSTEM ESP DETECTOR OPTIMIZED (5 STUDS)
