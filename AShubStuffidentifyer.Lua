@@ -1,5 +1,6 @@
---// AFNANSAKHA HUB LOADER + MAIN GUI
+--// AFNANSAKHA HUB LOADER + MAIN GUI WITH UI IDENTIFIER
 --// Tempatkan di: StarterGui -> LocalScript
+--// Nama File: AfnanSakhaHub_UIIdentifier.lua
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -296,9 +297,75 @@ Layout.Padding = UDim.new(0,8)
 Layout.Parent = ScrollList
 
 ----------------------------------------------------
+-- NEW: CODE VIEWER UI (Layar Hitam Tulisan Putih)
+----------------------------------------------------
+local CodeViewerFrame = Instance.new("Frame")
+CodeViewerFrame.Name = "CodeViewerFrame"
+CodeViewerFrame.Size = UDim2.new(0, 320, 0, 400)
+CodeViewerFrame.Position = UDim2.new(0.5, 285, 0.5, -200) -- Sebelah kanan AfnanSakha HUB
+CodeViewerFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+CodeViewerFrame.BackgroundTransparency = 0.05
+CodeViewerFrame.Visible = false
+CodeViewerFrame.Parent = ScreenGui
+
+Instance.new("UICorner", CodeViewerFrame).CornerRadius = UDim.new(0, 10)
+
+local CodeStroke = Instance.new("UIStroke")
+CodeStroke.Color = Color3.fromRGB(255, 255, 255)
+CodeStroke.Thickness = 1
+CodeStroke.Parent = CodeViewerFrame
+
+local CodeTitle = Instance.new("TextLabel")
+CodeTitle.Size = UDim2.new(1, -40, 0, 30)
+CodeTitle.Position = UDim2.new(0, 12, 0, 5)
+CodeTitle.BackgroundTransparency = 1
+CodeTitle.Text = "GUI SCRIPT IDENTIFIER"
+CodeTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+CodeTitle.TextSize = 14
+CodeTitle.Font = Enum.Font.GothamBold
+CodeTitle.TextXAlignment = Enum.TextXAlignment.Left
+CodeTitle.Parent = CodeViewerFrame
+
+local CodeCloseBtn = Instance.new("TextButton")
+CodeCloseBtn.Size = UDim2.new(0, 20, 0, 20)
+CodeCloseBtn.Position = UDim2.new(1, -30, 0, 7)
+CodeCloseBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
+CodeCloseBtn.Text = "X"
+CodeCloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+CodeCloseBtn.TextSize = 12
+CodeCloseBtn.Font = Enum.Font.GothamBold
+CodeCloseBtn.Parent = CodeViewerFrame
+Instance.new("UICorner", CodeCloseBtn).CornerRadius = UDim.new(0, 4)
+
+local CodeScroll = Instance.new("ScrollingFrame")
+CodeScroll.Size = UDim2.new(1, -20, 1, -50)
+CodeScroll.Position = UDim2.new(0, 10, 0, 40)
+CodeScroll.BackgroundTransparency = 1
+CodeScroll.ScrollBarThickness = 5
+CodeScroll.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
+CodeScroll.Parent = CodeViewerFrame
+
+local CodeText = Instance.new("TextLabel")
+CodeText.Size = UDim2.new(1, -10, 0, 0)
+CodeText.AutomaticSize = Enum.AutomaticSize.Y
+CodeText.BackgroundTransparency = 1
+CodeText.Text = "-- Klik UI manapun untuk generate code..."
+CodeText.TextColor3 = Color3.fromRGB(240, 240, 240)
+CodeText.TextSize = 12
+CodeText.Font = Enum.Font.Code
+CodeText.TextXAlignment = Enum.TextXAlignment.Left
+CodeText.TextYAlignment = Enum.TextYAlignment.Top
+CodeText.Parent = CodeScroll
+
+CodeCloseBtn.MouseButton1Click:Connect(function()
+	CodeViewerFrame.Visible = false
+end)
+
+----------------------------------------------------
 -- SCRIPT ROW SYSTEM
 ----------------------------------------------------
 _G.EspBendaDekatActive = false -- Status Global ESP
+_G.UIIdentifierActive = false   -- Status Global UI Identifier
 
 local function CreateScriptRow(name, defaultState)
 
@@ -381,15 +448,21 @@ local function CreateScriptRow(name, defaultState)
 			{BackgroundColor3 = targetColor}
 		):Play()
 
-		-- SISTEM PENGAKTIFAN KUSTOM ESP RADIUS 5 STUDS
+		-- PENGAKTIFAN FITUR
 		if name == "Detector ESP (Radius 5)" then
 			_G.EspBendaDekatActive = isOn
+		elseif name == "UI Identifier" then
+			_G.UIIdentifierActive = isOn
+			if not isOn then
+				CodeViewerFrame.Visible = false
+			end
 		end
 	end)
 end
 
--- Menambahkan Fitur Baru Kedalam Daftar Hub
+-- Menambahkan Fitur Ke Daftar Hub
 CreateScriptRow("Detector ESP (Radius 5)", false)
+CreateScriptRow("UI Identifier", false)
 
 ----------------------------------------------------
 -- EXECUTE BUTTON
@@ -459,6 +532,7 @@ RoundStroke.Parent = RoundToggleBtn
 ----------------------------------------------------
 CloseBtn.MouseButton1Click:Connect(function()
 	MainFrame.Visible = false
+	CodeViewerFrame.Visible = false
 	RoundToggleBtn.Visible = true
 end)
 
@@ -515,6 +589,23 @@ local function MakeDraggable(uiElement)
 				startPos.Y.Scale,
 				startPos.Y.Offset + delta.Y
 			)
+			
+			-- Ikuti pergeseran jika CodeViewer terbuka agar tetap berada di samping
+			if uiElement == MainFrame then
+				CodeViewerFrame.Position = UDim2.new(
+					MainFrame.Position.X.Scale, 
+					MainFrame.Position.X.Offset + MainFrame.Size.X.Offset + 15, 
+					MainFrame.Position.Y.Scale, 
+					MainFrame.Position.Y.Offset
+				)
+			elseif uiElement == RoundToggleBtn then
+				CodeViewerFrame.Position = UDim2.new(
+					RoundToggleBtn.Position.X.Scale, 
+					RoundToggleBtn.Position.X.Offset + RoundToggleBtn.Size.X.Offset + 15, 
+					RoundToggleBtn.Position.Y.Scale, 
+					RoundToggleBtn.Position.Y.Offset
+				)
+			end
 		end
 	end)
 end
@@ -545,7 +636,6 @@ local function bersihkanESP(objek)
 end
 
 local function buatTagESP(objek, partUtama, teks)
-	-- Jika sudah ada teksnya, tinggal perbarui teksnya biar akurat
 	local dataESP = objek:FindFirstChild("AfnanSakha_Esp5Studs")
 	if dataESP then
 		local bGui = dataESP:FindFirstChildOfClass("BillboardGui")
@@ -555,7 +645,6 @@ local function buatTagESP(objek, partUtama, teks)
 		return
 	end
 
-	-- Membuat kontainer ESP baru
 	local folderESP = Instance.new("Folder")
 	folderESP.Name = "AfnanSakha_Esp5Studs"
 	folderESP.Parent = objek
@@ -570,7 +659,7 @@ local function buatTagESP(objek, partUtama, teks)
 	local textLabel = Instance.new("TextLabel")
 	textLabel.Size = UDim2.new(1, 0, 1, 0)
 	textLabel.BackgroundTransparency = 1
-	textLabel.TextColor3 = Color3.fromRGB(0, 255, 128) -- Hijau Neon
+	textLabel.TextColor3 = Color3.fromRGB(0, 255, 128)
 	textLabel.TextStrokeTransparency = 0
 	textLabel.TextStrokeColor3 = Color3.fromRGB(0,0,0)
 	textLabel.TextSize = 13
@@ -579,31 +668,25 @@ local function buatTagESP(objek, partUtama, teks)
 	textLabel.Parent = billboard
 end
 
--- Thread Loop Utama yang berjalan di latar belakang (Background Thread)
 task.spawn(function()
 	while true do
-		-- Cek apakah Tombol UI Aktif dan Karakter kita sudah spawn sepenuhnya
 		if _G.EspBendaDekatActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
 			local rootPlayer = LocalPlayer.Character.HumanoidRootPart.Position
 
 			for _, objek in ipairs(Workspace:GetDescendants()) do
-				-- Proteksi jika di tengah jalan fiturnya dimatikan user
 				if not _G.EspBendaDekatActive then break end
 
 				if (objek:IsA("Model") or objek:IsA("BasePart")) and not objek:IsDescendantOf(LocalPlayer.Character) then
 					if objek.Name ~= "Terrain" and objek.Name ~= "Baseplate" then
 						
-						-- Validasi komponen part utama objek
 						local partUtama = objek:IsA("Model") and (objek.PrimaryPart or objek:FindFirstChildWhichIsA("BasePart", true)) or objek
 						if partUtama and partUtama:IsA("BasePart") then
 							
-							-- Rumus Jarak Matematika (Magnitude) untuk menyaring 5 studs depan/belakang/sekitar
 							local jarak = (partUtama.Position - rootPlayer).Magnitude
 
 							if jarak <= 5 then
 								local isiTeks = "Nama: " .. objek.Name
 								
-								-- Deteksi Tombol Key PC (ProximityPrompt) jika tersedia di objek tersebut
 								local prompt = objek:FindFirstChildOfClass("ProximityPrompt") or objek:FindFirstChildWhichIsA("ProximityPrompt", true)
 								if prompt then
 									isiTeks = isiTeks .. "\n[PC Key: " .. prompt.KeyboardKeyCode.Name .. "]"
@@ -611,7 +694,6 @@ task.spawn(function()
 								
 								buatTagESP(objek, partUtama, isiTeks)
 							else
-								-- Jika menjauh lebih dari 5 studs, hapus tulisan biar bersih & anti-lag
 								bersihkanESP(objek)
 							end
 						end
@@ -619,11 +701,93 @@ task.spawn(function()
 				end
 			end
 		else
-			-- Jika tombol dinonaktifkan (OFF), paksa hapus seluruh sisa ESP di map
 			for _, objek in ipairs(Workspace:GetDescendants()) do
 				bersihkanESP(objek)
 			end
 		end
-		task.wait(0.15) -- Interval refresh cepat demi akurasi jarak tanpa membebani CPU/HP
+		task.wait(0.15)
+	end
+end)
+
+
+----------------------------------------------------
+-- LUA ENGINE: UI IDENTIFIER CORE SYSTEM
+----------------------------------------------------
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if _G.UIIdentifierActive and (input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch) then
+		local x, y = input.Position.X, input.Position.Y
+		local foundGuis = PlayerGui:GetGuiObjectsAtPosition(x, y)
+		
+		local targetGui = nil
+		for _, gui in ipairs(foundGuis) do
+			-- Abaikan UI buatan Hub kita sendiri biar ga bentrok
+			if not gui:IsDescendantOf(ScreenGui) and not gui:IsDescendantOf(LoadingGui) then
+				targetGui = gui
+				break
+			end
+		end
+		
+		if targetGui then
+			local path = targetGui:GetFullName()
+			local className = targetGui.ClassName
+			
+			-- 1. Efek memunculkan Key PC / Info langsung di atas UI yang diklik (Fungsi Key PC simulator)
+			local oldKeyTag = targetGui:FindFirstChild("AfnanKeyTag")
+			if oldKeyTag then oldKeyTag:Destroy() end
+			
+			local keyTag = Instance.new("TextLabel")
+			keyTag.Name = "AfnanKeyTag"
+			keyTag.Size = UDim2.new(1, 0, 1, 0)
+			keyTag.BackgroundTransparency = 0.3
+			keyTag.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+			keyTag.TextColor3 = Color3.fromRGB(0, 255, 255)
+			keyTag.TextSize = 14
+			keyTag.Font = Enum.Font.GothamBold
+			keyTag.Text = "[PC KEY: E / CLICKED]"
+			keyTag.ZIndex = targetGui.ZIndex + 5
+			keyTag.Parent = targetGui
+			
+			-- Hilangkan tag otomatis setelah 2 detik
+			task.delay(2, function()
+				if keyTag then keyTag:Destroy() end
+			end)
+			
+			-- 2. Generate struktur kode lengkap untuk dimasukkan ke Code Viewer hitam-putih
+			local scriptText = "--// AFNANSAKHA UI IDENTIFIER CODE RESULT //--\n"
+			scriptText = scriptText .. "-- Object Path: " .. path .. "\n"
+			scriptText = scriptText .. "-- Class Name: " .. className .. "\n\n"
+			scriptText = scriptText .. "local TargetUI = " .. path .. "\n\n"
+			
+			if targetGui:IsA("TextButton") or targetGui:IsA("ImageButton") then
+				scriptText = scriptText .. "-- Fungsi Trigger untuk Button Click\n"
+				scriptText = scriptText .. "TargetUI.MouseButton1Click:Connect(function()\n"
+				scriptText = scriptText .. "    print('Button " .. targetGui.Name .. " Sukses Dieksekusi!')\n"
+				scriptText = scriptText .. "    -- Masukkan script custom kamu di bawah ini:\n\n"
+				scriptText = scriptText .. "end)\n"
+			elseif targetGui:IsA("TextBox") then
+				scriptText = scriptText .. "-- Fungsi Trigger untuk Input TextBox\n"
+				scriptText = scriptText .. "TargetUI.FocusLost:Connect(function(enterPressed)\n"
+				scriptText = scriptText .. "    if enterPressed then\n"
+				scriptText = scriptText .. "        print('User mengetik:', TargetUI.Text)\n"
+				scriptText = scriptText .. "    end\n"
+				scriptText = scriptText .. "end)\n"
+			else
+				scriptText = scriptText .. "-- Properti Standar Komponen GUI\n"
+				scriptText = scriptText .. "TargetUI.Visible = true\n"
+				scriptText = scriptText .. "TargetUI.BackgroundTransparency = 0\n"
+			end
+			
+			-- Update isi teks pada Code Viewer hitam
+			CodeText.Text = scriptText
+			
+			-- Mengatur posisi Code Viewer agar muncul tepat di sebelah UI Hub yang sedang aktif
+			if MainFrame.Visible then
+				CodeViewerFrame.Position = UDim2.new(MainFrame.Position.X.Scale, MainFrame.Position.X.Offset + MainFrame.Size.X.Offset + 15, MainFrame.Position.Y.Scale, MainFrame.Position.Y.Offset)
+			else
+				CodeViewerFrame.Position = UDim2.new(RoundToggleBtn.Position.X.Scale, RoundToggleBtn.Position.X.Offset + RoundToggleBtn.Size.X.Offset + 15, RoundToggleBtn.Position.Y.Scale, RoundToggleBtn.Position.Y.Offset)
+			end
+			
+			CodeViewerFrame.Visible = true
+		end
 	end
 end)
