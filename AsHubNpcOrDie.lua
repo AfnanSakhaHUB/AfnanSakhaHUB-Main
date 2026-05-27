@@ -401,8 +401,8 @@ local function CreateScriptRow(name, defaultState)
 								end
 							end
 						end)
-						
-elseif name == "Auto Task" then
+
+								elseif name == "Auto Task" then
 	if isOn then
 		task.spawn(function()
 			local visitedTasks = {}
@@ -419,59 +419,76 @@ elseif name == "Auto Task" then
 
 					if humPart and char then
 						local targetHitbox = nil
-						local allHitboxes = {}
-						local colorCounts = {}
-						local hitboxColorKeys = {}
+						local priorityTasks = {} -- Keranjang Kuning / Berwarna (Prioritas 1)
+						local normalTasks = {}   -- Keranjang Putih / Abu-abu (Prioritas 2)
 
-						-- STEP 1: Scan semua Hitbox dan hitung rumus frekuensi warnanya
 						for _, v in pairs(workspace:GetDescendants()) do
 							if v:IsA("BasePart") and v.Name == "Hitbox" then
-								local c = v.Color
-								local highlight = v:FindFirstChildOfClass("Highlight") 
-									or v.Parent:FindFirstChildOfClass("Highlight") 
-									or (v.Parent.Parent and v.Parent.Parent:FindFirstChildOfClass("Highlight"))
-								local selection = v:FindFirstChildOfClass("SelectionBox") 
-									or v.Parent:FindFirstChildOfClass("SelectionBox")
-								
-								if highlight then
-									c = (highlight.FillTransparency < 1 and highlight.FillColor) or highlight.OutlineColor
-								elseif selection then
-									c = selection.Color3
-								end
+								if not visitedTasks[v] then
+									-- Pastikan ProximityPrompt-nya aktif/bisa diinteraksi
+									local prompt = v:FindFirstChildOfClass("ProximityPrompt") 
+										or v.Parent:FindFirstChildOfClass("ProximityPrompt")
+										or v.Parent:FindFirstChild("ProximityPrompt", true)
 
-								-- Buat ID Warna unik berdasarkan RGB (dibulatkan biar akurat)
-								local colorKey = string.format("%.2f_%.2f_%.2f", c.R, c.G, c.B)
-								
-								table.insert(allHitboxes, v)
-								hitboxColorKeys[v] = colorKey
-								colorCounts[colorKey] = (colorCounts[colorKey] or 0) + 1
+									if prompt and prompt.Enabled then
+										local c = v.Color
+										local hasVisualEffect = false
+
+										-- Cek apakah objek dibungkus Highlight outline/SelectionBox
+										local highlight = v:FindFirstChildOfClass("Highlight") 
+											or v.Parent:FindFirstChildOfClass("Highlight")
+											or (v.Parent.Parent and v.Parent.Parent:FindFirstChildOfClass("Highlight"))
+										local selection = v:FindFirstChildOfClass("SelectionBox") 
+											or v.Parent:FindFirstChildOfClass("SelectionBox")
+
+										if highlight then
+											c = (highlight.FillTransparency < 1 and highlight.FillColor) or highlight.OutlineColor
+											hasVisualEffect = true
+										elseif selection then
+											c = selection.Color3
+											hasVisualEffect = true
+										end
+
+										-- RUMUS MATEMATIKA WARNA: Cek keseimbangan RGB
+										local diffRG = math.abs(c.R - c.G)
+										local diffGB = math.abs(c.G - c.B)
+										local isMonochrome = (diffRG < 0.1 and diffGB < 0.1) -- True jika Putih/Abu/Hitam
+
+										-- Cek apakah objek gak punya warna (Transparan & gak ada efek)
+										local noColor = (v.Transparency >= 1 and not hasVisualEffect)
+
+										if not noColor then
+											if isMonochrome and c.R > 0.5 then
+												-- Masuk keranjang PUTIH (Hanya dipake kalau kuning abis)
+												table.insert(normalTasks, v)
+											elseif not isMonochrome then
+												-- Masuk keranjang KUNING / WARNA TUGAS (Target Utama)
+												table.insert(priorityTasks, v)
+											end
+										end
+									end
+								end
 							end
 						end
 
-						-- STEP 2: Cari Hitbox yang jumlah warnanya CUMA ADA 1 di map (Paling beda sendiri)
-						for _, v in pairs(allHitboxes) do
-							local key = hitboxColorKeys[v]
-							if colorCounts[key] == 1 then -- Syarat mutlak: Gak boleh kembar/sama dengan yang lain
-								if not visitedTasks[v] then
-									targetHitbox = v
-									break
+						-- SCAN REFRESH: Jika semua target sudah habis dikunjungi, reset memory-nya
+						if #priorityTasks == 0 and #normalTasks == 0 then
+							visitedTasks = {}
+							for _, v in pairs(workspace:GetDescendants()) do
+								if v:IsA("BasePart") and v.Name == "Hitbox" then
+									-- Isi ulang antrean di loop berikutnya
 								end
 							end
+						end
+
+						-- PENENTUAN TELEPORT: Dahulukan yang berwarna, putih jadi cadangan
+						if #priorityTasks > 0 then
+							targetHitbox = priorityTasks[1]
+						elseif #normalTasks > 0 then
+							targetHitbox = normalTasks[1]
 						end
 						
-						-- STEP 3: Reset antrean kalau yang unik sudah pernah dikunjungi semua
-						if not targetHitbox and #allHitboxes > 0 then
-							for _, v in pairs(allHitboxes) do
-								local key = hitboxColorKeys[v]
-								if colorCounts[key] == 1 then
-									visitedTasks = {} -- Reset memory kunjungan
-									targetHitbox = v
-									break
-								end
-							end
-						end
-
-						-- STEP 4: Eksekusi Teleportasi
+						-- Eksekusi Gerakan dan Mengisi Task
 						if targetHitbox then
 							visitedTasks[targetHitbox] = true
 							humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
@@ -502,7 +519,7 @@ elseif name == "Auto Task" then
 			end
 		end)
 	end
-														
+								
 		elseif name == "Auto Run when Sherrif is near" then
 			if isOn then
 				task.spawn(function()
