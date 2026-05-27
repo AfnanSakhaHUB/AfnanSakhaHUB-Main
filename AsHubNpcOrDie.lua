@@ -423,18 +423,36 @@ elseif name == "Auto Task" then
 						return 
 					end
 
+					-- FIX 1: Ambil Character & HumanoidRootPart secara real-time di sini biar gak NIL
+					local char = LocalPlayer.Character
+					local humPart = char and char:FindFirstChild("HumanoidRootPart")
+
 					if humPart and char then
 						local targetHitbox = nil
-						local yellowTasks = {} -- Keranjang Kuning (Prioritas 1)
-						local whiteTasks = {}  -- Keranjang Putih (Prioritas 2)
+						local yellowTasks = {}
+						local whiteTasks = {}
 
-						-- Fungsi untuk mengecek dan mengelompokkan warna Hitbox
-						local function kelompolkanHitbox(v)
-							local colorName = string.lower(v.BrickColor.Name)
-							-- Cek komponen RGB & nama warna untuk memastikan itu Kuning/Emas
-							local isYellow = string.find(colorName, "yellow") or string.find(colorName, "gold") or (v.Color.R > 0.6 and v.Color.G > 0.6 and v.Color.B < 0.4)
-							-- Cek jika itu Putih
-							local isWhite = string.find(colorName, "white") or (v.Color.R > 0.8 and v.Color.G > 0.8 and v.Color.B > 0.8)
+						-- FIX 2: Fungsi pintar untuk membaca warna Part + warna Outline (Highlight/SelectionBox)
+						local function kelompokkanHitbox(v)
+							local c = v.Color
+							local brickName = string.lower(v.BrickColor.Name)
+							
+							-- Cek apakah game memakai sistem Highlight outline seperti di screenshot
+							local highlight = v:FindFirstChildOfClass("Highlight") 
+								or v.Parent:FindFirstChildOfClass("Highlight") 
+								or (v.Parent.Parent and v.Parent.Parent:FindFirstChildOfClass("Highlight"))
+							local selection = v:FindFirstChildOfClass("SelectionBox") 
+								or v.Parent:FindFirstChildOfClass("SelectionBox")
+							
+							if highlight then
+								c = (highlight.FillTransparency < 1 and highlight.FillColor) or highlight.OutlineColor
+							elseif selection then
+								c = selection.Color3
+							end
+
+							-- Logika saringan warna (Kuning vs Putih)
+							local isYellow = (c.R > 0.5 and c.G > 0.5 and c.B < 0.4) or string.find(brickName, "yellow") or string.find(brickName, "gold")
+							local isWhite = (c.R > 0.8 and c.G > 0.8 and c.B > 0.8) or string.find(brickName, "white")
 
 							if isYellow then
 								table.insert(yellowTasks, v)
@@ -443,33 +461,33 @@ elseif name == "Auto Task" then
 							end
 						end
 
-						-- SCAN 1: Cari Hitbox yang belum pernah dikunjungi
+						-- SCAN 1: Cari Hitbox baru yang belum dikunjungi
 						for _, v in pairs(workspace:GetDescendants()) do
 							if v:IsA("BasePart") and v.Name == "Hitbox" then
 								if not visitedTasks[v] then
-									kelompolkanHitbox(v)
+									kelompokkanHitbox(v)
 								end
 							end
 						end
 						
-						-- SCAN 2: Jika semua target valid sudah habis dikunjungi, reset list-nya
+						-- SCAN 2: Reset list kalau semua target valid sudah selesai dirampok
 						if #yellowTasks == 0 and #whiteTasks == 0 then
 							visitedTasks = {}
 							for _, v in pairs(workspace:GetDescendants()) do
 								if v:IsA("BasePart") and v.Name == "Hitbox" then
-									kelompolkanHitbox(v)
+									kelompokkanHitbox(v)
 								end
 							end
 						end
 
-						-- SISTEM PRIORITAS: Dahulukan kuning, kalau tidak ada baru ambil putih
+						-- PRIORITAS: Gas yang kuning dulu, kalau abis baru yang putih
 						if #yellowTasks > 0 then
 							targetHitbox = yellowTasks[1]
 						elseif #whiteTasks > 0 then
 							targetHitbox = whiteTasks[1]
 						end
 						
-						-- Eksekusi Teleport dan Interaksi ProximityPrompt
+						-- Eksekusi Teleportasi dan Interaksi
 						if targetHitbox then
 							visitedTasks[targetHitbox] = true
 							humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
@@ -499,7 +517,7 @@ elseif name == "Auto Task" then
 				task.wait(0.5)
 			end
 		end)
-	end
+	end	
 
 		elseif name == "Auto Run when Sherrif is near" then
 			if isOn then
