@@ -402,15 +402,6 @@ local function CreateScriptRow(name, defaultState)
 							end
 						end)
 						
-						task.wait(1)
-						-- Mengurangi timer cooldown setiap detiknya
-						if cooldown > 0 then
-							cooldown = cooldown - 1
-						end
-					end
-				end)
-			end
-
 elseif name == "Auto Task" then
 	if isOn then
 		task.spawn(function()
@@ -423,71 +414,64 @@ elseif name == "Auto Task" then
 						return 
 					end
 
-					-- FIX 1: Ambil Character & HumanoidRootPart secara real-time di sini biar gak NIL
 					local char = LocalPlayer.Character
 					local humPart = char and char:FindFirstChild("HumanoidRootPart")
 
 					if humPart and char then
 						local targetHitbox = nil
-						local yellowTasks = {}
-						local whiteTasks = {}
+						local allHitboxes = {}
+						local colorCounts = {}
+						local hitboxColorKeys = {}
 
-						-- FIX 2: Fungsi pintar untuk membaca warna Part + warna Outline (Highlight/SelectionBox)
-						local function kelompokkanHitbox(v)
-							local c = v.Color
-							local brickName = string.lower(v.BrickColor.Name)
-							
-							-- Cek apakah game memakai sistem Highlight outline seperti di screenshot
-							local highlight = v:FindFirstChildOfClass("Highlight") 
-								or v.Parent:FindFirstChildOfClass("Highlight") 
-								or (v.Parent.Parent and v.Parent.Parent:FindFirstChildOfClass("Highlight"))
-							local selection = v:FindFirstChildOfClass("SelectionBox") 
-								or v.Parent:FindFirstChildOfClass("SelectionBox")
-							
-							if highlight then
-								c = (highlight.FillTransparency < 1 and highlight.FillColor) or highlight.OutlineColor
-							elseif selection then
-								c = selection.Color3
-							end
-
-							-- Logika saringan warna (Kuning vs Putih)
-							local isYellow = (c.R > 0.5 and c.G > 0.5 and c.B < 0.4) or string.find(brickName, "yellow") or string.find(brickName, "gold")
-							local isWhite = (c.R > 0.8 and c.G > 0.8 and c.B > 0.8) or string.find(brickName, "white")
-
-							if isYellow then
-								table.insert(yellowTasks, v)
-							elseif isWhite then
-								table.insert(whiteTasks, v)
-							end
-						end
-
-						-- SCAN 1: Cari Hitbox baru yang belum dikunjungi
+						-- STEP 1: Scan semua Hitbox dan hitung rumus frekuensi warnanya
 						for _, v in pairs(workspace:GetDescendants()) do
 							if v:IsA("BasePart") and v.Name == "Hitbox" then
+								local c = v.Color
+								local highlight = v:FindFirstChildOfClass("Highlight") 
+									or v.Parent:FindFirstChildOfClass("Highlight") 
+									or (v.Parent.Parent and v.Parent.Parent:FindFirstChildOfClass("Highlight"))
+								local selection = v:FindFirstChildOfClass("SelectionBox") 
+									or v.Parent:FindFirstChildOfClass("SelectionBox")
+								
+								if highlight then
+									c = (highlight.FillTransparency < 1 and highlight.FillColor) or highlight.OutlineColor
+								elseif selection then
+									c = selection.Color3
+								end
+
+								-- Buat ID Warna unik berdasarkan RGB (dibulatkan biar akurat)
+								local colorKey = string.format("%.2f_%.2f_%.2f", c.R, c.G, c.B)
+								
+								table.insert(allHitboxes, v)
+								hitboxColorKeys[v] = colorKey
+								colorCounts[colorKey] = (colorCounts[colorKey] or 0) + 1
+							end
+						end
+
+						-- STEP 2: Cari Hitbox yang jumlah warnanya CUMA ADA 1 di map (Paling beda sendiri)
+						for _, v in pairs(allHitboxes) do
+							local key = hitboxColorKeys[v]
+							if colorCounts[key] == 1 then -- Syarat mutlak: Gak boleh kembar/sama dengan yang lain
 								if not visitedTasks[v] then
-									kelompokkanHitbox(v)
+									targetHitbox = v
+									break
 								end
 							end
 						end
 						
-						-- SCAN 2: Reset list kalau semua target valid sudah selesai dirampok
-						if #yellowTasks == 0 and #whiteTasks == 0 then
-							visitedTasks = {}
-							for _, v in pairs(workspace:GetDescendants()) do
-								if v:IsA("BasePart") and v.Name == "Hitbox" then
-									kelompokkanHitbox(v)
+						-- STEP 3: Reset antrean kalau yang unik sudah pernah dikunjungi semua
+						if not targetHitbox and #allHitboxes > 0 then
+							for _, v in pairs(allHitboxes) do
+								local key = hitboxColorKeys[v]
+								if colorCounts[key] == 1 then
+									visitedTasks = {} -- Reset memory kunjungan
+									targetHitbox = v
+									break
 								end
 							end
 						end
 
-						-- PRIORITAS: Gas yang kuning dulu, kalau abis baru yang putih
-						if #yellowTasks > 0 then
-							targetHitbox = yellowTasks[1]
-						elseif #whiteTasks > 0 then
-							targetHitbox = whiteTasks[1]
-						end
-						
-						-- Eksekusi Teleportasi dan Interaksi
+						-- STEP 4: Eksekusi Teleportasi
 						if targetHitbox then
 							visitedTasks[targetHitbox] = true
 							humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
@@ -517,8 +501,8 @@ elseif name == "Auto Task" then
 				task.wait(0.5)
 			end
 		end)
-	end	
-
+	end
+														
 		elseif name == "Auto Run when Sherrif is near" then
 			if isOn then
 				task.spawn(function()
