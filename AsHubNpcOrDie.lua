@@ -344,24 +344,53 @@ local function CreateScriptRow(name, defaultState)
 											box.Color3 = Color3.new(0, 0, 1)
 										end
 									else
-										if not player:FindFirstChild("ESP") then
-											local box = Instance.new("BoxHandleAdornment", player)
-											box.Name = "ESP"
-											box.Adornee = player
-											box.AlwaysOnTop = true
-											box.Size = Vector3.new(4, 5, 1)
-											box.ZIndex = 0
-											box.Transparency = 0.3
-											box.Color3 = Color3.new(0, 1, 0)
-										end
-									end
+												if name == "ESP" then
+	if isOn then
+		task.spawn(function()
+			while isOn do
+				for _, player in pairs(workspace:GetDescendants()) do
+					if player:IsA("Model") and player:FindFirstChild("HumanoidRootPart") then
+						-- Memastikan ini adalah karakter pemain lain dan bukan karakter kita sendiri
+						if player:FindFirstChild("HumanoidRootPart").CollisionGroup == "Player" and player ~= char then
+							local playerObject = Players:GetPlayerFromCharacter(player)
+							
+							-- Tentukan warna default terlebih dahulu (misal: Putih untuk pemain biasa)
+							local espColor = Color3.new(1, 1, 1) 
+							
+							-- Cek tim pemain jika playerObject dan Tim-nya ada
+							if playerObject and playerObject.Team then
+								if playerObject.Team.Name == "Sheriffs" then
+									espColor = Color3.new(0, 0, 1) -- Biru untuk Sheriff
+								elseif playerObject.Team.Name == "Criminals" then
+									espColor = Color3.new(1, 0, 0) -- Merah untuk Criminals
 								end
 							end
+
+							-- Proses pembuatan atau pembaharuan warna ESP
+							local existingESP = player:FindFirstChild("ESP")
+							if existingESP then
+								-- Jika ESP sudah ada, tinggal update warnanya saja (antisipasi kalau pindah tim)
+								existingESP.Color3 = espColor
+							else
+								-- Jika belum ada, buat BoxHandleAdornment baru
+								local box = Instance.new("BoxHandleAdornment")
+								box.Name = "ESP"
+								box.Adornee = player
+								box.AlwaysOnTop = true
+								box.Size = Vector3.new(4, 5, 1)
+								box.ZIndex = 0
+								box.Transparency = 0.3
+								box.Color3 = espColor
+								box.Parent = player -- Praktik terbaik: set parent di akhir setelah properti diisi
+							end
 						end
-						task.wait(1)
 					end
-				end)
-			else
+				end
+				task.wait(1) -- Jeda 1 detik sebelum mendeteksi ulang agar tidak membebani performa game
+			end
+		end)
+												end
+												
 				for _, e in pairs(workspace:GetDescendants()) do
 					if e.Name == "ESP" then e:Destroy() end
 				end
