@@ -449,22 +449,6 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			end
 
-		elseif name == "Auto Instance Task" then
-			if isOn then
-				task.spawn(function()
-					while isOn do
-						pcall(function()
-							for _, v in pairs(workspace:GetDescendants()) do
-								if v:IsA("ProximityPrompt") and v.HoldDuration ~= 0 then
-									v.HoldDuration = 0
-								end
-							end
-						end)
-						task.wait(1)
-					end
-				end)
-			end
-
 		elseif name == "Inf Stamina" then
 			if isOn then
 				task.spawn(function()
@@ -557,7 +541,6 @@ CreateScriptRow("ESP", false)
 CreateScriptRow("Auto Complete Obby", false)
 CreateScriptRow("Auto Task", false)
 CreateScriptRow("Auto Nearest Task", false)
-CreateScriptRow("Auto Instance Task", false)
 CreateScriptRow("Inf Stamina", false)
 CreateScriptRow("Noclip", false)
 
