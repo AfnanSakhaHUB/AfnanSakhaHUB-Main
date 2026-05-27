@@ -531,38 +531,26 @@ local function CreateScriptRow(name, defaultState)
 
 elseif name == "Inf Stamina" then
 	_G.InfStaminaActive = isOn
+	
 	if isOn then
-		task.spawn(function()
-			-- Loop berjalan selama status toggle bernilai TRUE
-			while _G.InfStaminaActive do
-				pcall(function()
-					local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-					local modules = playerGui and playerGui:FindFirstChild("Modules")
-					local gameplay = modules and modules:FindFirstChild("Gameplay")
-					local sprint = gameplay and gameplay:FindFirstChild("Sprint")
-					local stamina = sprint and sprint:FindFirstChild("Stamina")
-					
-					if stamina then
-						stamina.Value = 999999 -- Mengunci stamina menjadi 999999
-					end
-				end)
-				task.wait(0.1) -- Refresh dipercepat menjadi 0.1 detik agar anti-drop
+		-- METODE METATABLE HOOK (Memanfaatkan celah tim Lobby)
+		local rawMeta = getrawmetatable(game)
+		local oldIndex = rawMeta.__index
+		setreadonly(rawMeta, false)
+		
+		rawMeta.__index = newcclosure(function(self, key)
+			-- Jika fitur aktif, dan script game sedang mengecek properti "Team" milik kamu
+			if _G.InfStaminaActive and self == game:GetService("Players").LocalPlayer and key == "Team" then
+				local lobbyTeam = game:GetService("Teams"):FindFirstChild("Lobby")
+				if lobbyTeam then
+					return lobbyTeam -- Bohongi script game, katakan kita ada di tim Lobby
+				end
 			end
+			return oldIndex(self, key)
 		end)
-	else
-		-- Jika dimatikan (OFF)
-		pcall(function()
-			local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
-			local modules = playerGui and playerGui:FindFirstChild("Modules")
-			local gameplay = modules and modules:FindFirstChild("Gameplay")
-			local sprint = gameplay and gameplay:FindFirstChild("Sprint")
-			local stamina = sprint and sprint:FindFirstChild("Stamina")
-			
-			if stamina then
-				stamina.Value = 100 -- Mengembalikan stamina ke angka normal (100)
-			end
-		end)
+		setreadonly(rawMeta, true)
 	end
+				
 
 		elseif name == "Noclip" then
 			if isOn then
