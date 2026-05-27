@@ -385,7 +385,7 @@ local function CreateScriptRow(name, defaultState)
 					end
 				end)
 			end
-
+				
 		elseif name == "Auto Task" then
 			if isOn then
 				task.spawn(function()
@@ -437,7 +437,7 @@ local function CreateScriptRow(name, defaultState)
 									if prompt and isOn then
 										prompt.HoldDuration = 0
 										prompt:InputHoldBegin() -- Tekan E
-										task.wait(5.5)           -- Tahan selama 10 detik
+										task.wait(5)           -- Tahan selama 10 detik
 										prompt:InputHoldEnd()   -- Lepas E
 									else
 										task.wait(1) -- Jika prompt tidak ditemukan, tunggu 1 detik lalu cari task lain
