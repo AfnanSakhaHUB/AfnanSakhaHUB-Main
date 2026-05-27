@@ -9,6 +9,7 @@ local Workspace = game:GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local LocalPlayer = game.Players.LocalPlayer
 
 ----------------------------------------------------
 -- AUTO CLEANUP
