@@ -323,28 +323,6 @@ local function CreateScriptRow(name, defaultState)
 			end
 
 		elseif name == "ESP" then
-			if isOn then
-				task.spawn(function()
-					while isOn do
-						for _, player in pairs(workspace:GetDescendants()) do
-							if player:IsA("Model") and player:FindFirstChild("HumanoidRootPart") then
-								if player:FindFirstChild("HumanoidRootPart").CollisionGroup == "Player" and player ~= char then
-									local playerObject = Players:GetPlayerFromCharacter(player)
-									if playerObject and playerObject.Team and playerObject.Team.Name == "Sheriffs" then
-										if player:FindFirstChild("ESP") then
-											player:FindFirstChild("ESP").Color3 = Color3.new(0, 0, 1)
-										else
-											local box = Instance.new("BoxHandleAdornment", player)
-											box.Name = "ESP"
-											box.Adornee = player
-											box.AlwaysOnTop = true
-											box.Size = Vector3.new(4, 5, 1)
-											box.ZIndex = 0
-											box.Transparency = 0.3
-											box.Color3 = Color3.new(0, 0, 1)
-										end
-									else
-												if name == "ESP" then
 	if isOn then
 		task.spawn(function()
 			while isOn do
@@ -389,8 +367,8 @@ local function CreateScriptRow(name, defaultState)
 				task.wait(1) -- Jeda 1 detik sebelum mendeteksi ulang agar tidak membebani performa game
 			end
 		end)
-												end
-												
+				
+			else
 				for _, e in pairs(workspace:GetDescendants()) do
 					if e.Name == "ESP" then e:Destroy() end
 				end
