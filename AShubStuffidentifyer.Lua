@@ -460,9 +460,39 @@ local function CreateScriptRow(name, defaultState)
 	end)
 end
 
+elseif name == "Speed Monitor" then
+    _G.SpeedMonitorActive = isOn
+    
+    if isOn then
+        local RunService = game:GetService("RunService")
+        
+        -- Loop ringan menggunakan Heartbeat (berjalan di setiap frame fisika)
+        task.spawn(function()
+            while _G.SpeedMonitorActive do
+                local mySpeed = ambilKecepatan(LocalPlayer)
+                
+                -- Cari tahu juga setelan WalkSpeed asli dari game untuk perbandingan
+                local maxWalkSpeed = 0
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                    maxWalkSpeed = math.round(LocalPlayer.Character.Humanoid.WalkSpeed)
+                end
+                
+                -- Mengubah teks label row UI kamu secara real-time
+                -- Catatan: Sesuaikan 'Label' dengan nama variabel teks pada fungsi CreateScriptRow kamu
+                Label.Text = string.format("Speed Monitor [Real: %d | Max: %d]", mySpeed, maxWalkSpeed)
+                
+                task.wait(0.1) -- Di-refresh setiap 0.1 detik agar tidak lag dan tetap responsif
+            end
+        end)
+    else
+        -- Jika dimatikan, kembalikan teks ke nama semula
+        Label.Text = "Speed Monitor (OFF)"
+    end
+
 -- Menambahkan Fitur Ke Daftar Hub
 CreateScriptRow("Detector ESP (Radius 5)", false)
 CreateScriptRow("UI Identifier", false)
+CreateScriptRow("Speed Monitor", false)
 
 ----------------------------------------------------
 -- EXECUTE BUTTON
