@@ -328,29 +328,27 @@ local function CreateScriptRow(name, defaultState)
 			while isOn do
 				for _, player in pairs(workspace:GetDescendants()) do
 					if player:IsA("Model") and player:FindFirstChild("HumanoidRootPart") then
-						-- Memastikan ini adalah karakter pemain lain dan bukan karakter kita sendiri
 						if player:FindFirstChild("HumanoidRootPart").CollisionGroup == "Player" and player ~= char then
 							local playerObject = Players:GetPlayerFromCharacter(player)
+							-- Mengambil komponen Humanoid dari karakter untuk mengecek WalkSpeed
+							local humanoid = player:FindFirstChildOfClass("Humanoid")
 							
-							-- Tentukan warna default terlebih dahulu (misal: Putih untuk pemain biasa)
+							-- Warna default (Putih) jika tidak memenuhi syarat bawah
 							local espColor = Color3.new(1, 1, 1) 
 							
-							-- Cek tim pemain jika playerObject dan Tim-nya ada
-							if playerObject and playerObject.Team then
-								if playerObject.Team.Name == "Sheriffs" then
-									espColor = Color3.new(0, 0, 1) -- Biru untuk Sheriff
-								elseif playerObject.Team.Name == "Criminals" then
-									espColor = Color3.new(1, 0, 0) -- Merah untuk Criminals
-								end
+							if humanoid and humanoid.WalkSpeed < 16 then
+								-- JIKA KECEPATAN DI BAWAH 16: Dianggap Criminals (Warna Merah)
+								espColor = Color3.new(1, 0, 0)
+							elseif playerObject and playerObject.Team and playerObject.Team.Name == "Sheriffs" then
+								-- JIKA TIM-NYA SHERIFFS: Tetap menggunakan deteksi tim (Warna Biru)
+								espColor = Color3.new(0, 0, 1)
 							end
 
 							-- Proses pembuatan atau pembaharuan warna ESP
 							local existingESP = player:FindFirstChild("ESP")
 							if existingESP then
-								-- Jika ESP sudah ada, tinggal update warnanya saja (antisipasi kalau pindah tim)
 								existingESP.Color3 = espColor
 							else
-								-- Jika belum ada, buat BoxHandleAdornment baru
 								local box = Instance.new("BoxHandleAdornment")
 								box.Name = "ESP"
 								box.Adornee = player
@@ -359,20 +357,19 @@ local function CreateScriptRow(name, defaultState)
 								box.ZIndex = 0
 								box.Transparency = 0.3
 								box.Color3 = espColor
-								box.Parent = player -- Praktik terbaik: set parent di akhir setelah properti diisi
+								box.Parent = player
 							end
 						end
 					end
 				end
-				task.wait(1) -- Jeda 1 detik sebelum mendeteksi ulang agar tidak membebani performa game
+				task.wait(1) -- Jeda 1 detik agar tidak lag
 			end
 		end)
-				
-			else
-				for _, e in pairs(workspace:GetDescendants()) do
-					if e.Name == "ESP" then e:Destroy() end
-				end
-			end
+	else
+		for _, e in pairs(workspace:GetDescendants()) do
+			if e.Name == "ESP" then e:Destroy() end
+		   end
+		  end
 
 		elseif name == "Auto Complete Obby" then
 			if isOn then
