@@ -367,7 +367,7 @@ local function CreateScriptRow(name, defaultState)
 				end
 			end
 
-		 name == "Auto Complete Obby" then
+			elseif name == "Auto Complete Obby" then
 			if isOn then
 				task.spawn(function()
 					while isOn do
