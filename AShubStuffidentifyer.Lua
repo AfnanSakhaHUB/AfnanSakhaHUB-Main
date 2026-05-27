@@ -362,6 +362,339 @@ CodeCloseBtn.MouseButton1Click:Connect(function()
 end)
 
 ----------------------------------------------------
+-- HELPER FUNCTIONS
+----------------------------------------------------
+local function ambilKecepatan(plr)
+	if plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+		return math.round(plr.Character.HumanoidRootPart.Velocity.Magnitude)
+	end
+	return 0
+end
+
+----------------------------------------------------
+-- SCRIPT ROW SYSTEM
+----------------------------------------------------
+_G.EspBendaDekatActive = false -- Status Global ESP
+_G.UIIdentifierActive = false   -- Status Global UI Identifier
+_G.SpeedMonitorActive = false
+
+local function CreateScriptRow(name, defaultState)
+
+	local Row = Instance.new("Frame")
+	Row.Size = UDim2.new(1,-10,0,45)
+	Row.BackgroundColor3 = Color3.fromRGB(18,32,55)
+	Row.Parent = ScrollList
+
+	Instance.new("UICorner", Row).CornerRadius = UDim.new(0,8)
+
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Color = Color3.fromRGB(0,100,180)
+	Stroke.Parent = Row
+
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(0.7,0,1,0)
+	Label.Position = UDim2.new(0,15,0,0)
+	Label.BackgroundTransparency = 1
+	Label.Text = name .. (defaultState and " (ON)" or " (OFF)")
+	Label.TextColor3 = Color3.fromRGB(240,245,255)
+	Label.TextSize = 15
+	Label.Font = Enum.Font.GothamMedium
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = Row
+
+	local ToggleBtn = Instance.new("TextButton")
+	ToggleBtn.Size = UDim2.new(0,55,0,26)
+	ToggleBtn.Position = UDim2.new(1,-70,0.5,-13)
+	ToggleBtn.BackgroundColor3 =
+		defaultState
+		and Color3.fromRGB(0,180,255)
+		or Color3.fromRGB(35,50,75)
+
+	ToggleBtn.Text = ""
+	ToggleBtn.Parent = Row
+
+	Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0.5,0)
+
+	local Circle = Instance.new("Frame")
+	Circle.Size = UDim2.new(0,20,0,20)
+
+	Circle.Position =
+		defaultState
+		and UDim2.new(1,-23,0.5,-10)
+		or UDim2.new(0,3,0.5,-10)
+
+	Circle.BackgroundColor3 = Color3.fromRGB(255,255,255)
+	Circle.Parent = ToggleBtn
+
+	Instance.new("UICorner", Circle).CornerRadius = UDim.new(0.5,0)
+
+	local isOn = defaultState
+
+	ToggleBtn.MouseButton1Click:Connect(function()
+
+		isOn = not isOn
+
+		Label.Text = name .. (isOn and " (ON)" or " (OFF)")
+
+		local targetPos =
+			isOn
+			and UDim2.new(1,-23,0.5,-10)
+			or UDim2.new(0,3,0.5,-10)
+
+		local targetColor =
+			isOn
+			and Color3.fromRGB(0,180,255)
+			or Color3.fromRGB(35,50,75)
+
+		TweenService:Create(
+			Circle,
+			TweenInfo.new(0.2),
+			{Position = targetPos}
+		):Play()
+
+		TweenService:Create(
+			ToggleBtn,
+			TweenInfo.new(0.2),
+			{BackgroundColor3 = targetColor}
+		):Play()
+
+		-- PENGAKTIFAN FITUR
+		if name == "Detector ESP (Radius 5)" then
+			_G.EspBendaDekatActive = isOn
+		elseif name == "UI Identifier" then
+			_G.UIIdentifierActive = isOn
+			if not isOn then
+				CodeViewerFrame.Visible = false
+			end
+		elseif name == "Speed Monitor" then
+			_G.SpeedMonitorActive = isOn
+			
+			if isOn then
+				-- Loop ringan menggunakan Heartbeat (berjalan di setiap frame fisika)
+				task.spawn(function()
+					while _G.SpeedMonitorActive do
+						local mySpeed = ambilKecepatan(LocalPlayer)
+						
+						-- Cari tahu juga setelan WalkSpeed asli dari game untuk perbandingan
+						local maxWalkSpeed = 0
+						if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+							maxWalkSpeed = math.round(LocalPlayer.Character.Humanoid.WalkSpeed)
+						end
+						
+						-- Mengubah teks label row UI kamu secara real-time
+						Label.Text = string.format("Speed Monitor [Real: %d | Max: %d]", mySpeed, maxWalkSpeed)
+						
+						task.wait(0.1) -- Di-refresh setiap 0.1 detik agar tidak lag dan tetap responsif
+					end
+				end)
+			else
+				-- Jika dimatikan, kembalikan teks ke nama semula
+				Label.Text = "Speed Monitor (OFF)"
+			end
+		end
+	end)
+end
+
+-- Menambahkan Fitur Ke Daftar Hub
+CreateScriptRow("Detector ESP (Radius 5)", false)
+CreateScriptRow("UI Identifier", false)
+CreateScriptRow("Speed Monitor", false)
+
+----------------------------------------------------
+-- EXECUTE BUTTON
+----------------------------------------------------
+local ExecuteAllBtn = Instance.new("TextButton")
+ExecuteAllBtn.Size = UDim2.new(0.7,0,0,40)
+ExecuteAllBtn.Position = UDim2.new(0,15,1,-50)
+ExecuteAllBtn.BackgroundColor3 = Color3.fromRGB(0,90,180)
+ExecuteAllBtn.Text = "EXECUTE SELECTED SCRIPTS"
+ExecuteAllBtn.TextColor3 = Color3.fromRGB(255,255,255)
+ExecuteAllBtn.TextSize = 14
+ExecuteAllBtn.Font = Enum.Font.GothamBold
+ExecuteAllBtn.Parent = MainFrame
+
+Instance.new("UICorner", ExecuteAllBtn).CornerRadius = UDim.new(0,6)
+
+local ExecGradient = Instance.new("UIGradient")
+ExecGradient.Color = ColorSequence.new(
+	Color3.fromRGB(0,100,220),
+	Color3.fromRGB(0,150,255)
+)
+ExecGradient.Parent = ExecuteAllBtn
+
+----------------------------------------------------
+-- PASTEBIN BUTTON
+----------------------------------------------------
+local PastebinBtn = Instance.new("TextButton")
+PastebinBtn.Size = UDim2.new(0.23,0,0,40)
+PastebinBtn.Position = UDim2.new(0.74,0,1,-50)
+PastebinBtn.BackgroundColor3 = Color3.fromRGB(20,40,70)
+PastebinBtn.Text = "PASTE BIN"
+PastebinBtn.TextColor3 = Color3.fromRGB(0,200,255)
+PastebinBtn.TextSize = 13
+PastebinBtn.Font = Enum.Font.GothamBold
+PastebinBtn.Parent = MainFrame
+
+Instance.new("UICorner", PastebinBtn).CornerRadius = UDim.new(0,6)
+
+local PasteStroke = Instance.new("UIStroke")
+PasteStroke.Color = Color3.fromRGB(0,130,220)
+PasteStroke.Parent = PastebinBtn
+
+----------------------------------------------------
+-- ROUND TOGGLE BUTTON
+----------------------------------------------------
+local RoundToggleBtn = Instance.new("TextButton")
+RoundToggleBtn.Name = "RoundToggleBtn"
+RoundToggleBtn.Size = UDim2.new(0,60,0,60)
+RoundToggleBtn.Position = UDim2.new(0,20,0.5,-30)
+RoundToggleBtn.BackgroundColor3 = Color3.fromRGB(10,25,50)
+RoundToggleBtn.Text = "AS"
+RoundToggleBtn.TextColor3 = Color3.fromRGB(0,180,255)
+RoundToggleBtn.TextSize = 20
+RoundToggleBtn.Font = Enum.Font.GothamBold
+RoundToggleBtn.Visible = false
+RoundToggleBtn.Parent = ScreenGui
+
+Instance.new("UICorner", RoundToggleBtn).CornerRadius = UDim.new(1,0)
+
+local RoundStroke = Instance.new("UIStroke")
+RoundStroke.Color = Color3.fromRGB(0,150,255)
+RoundStroke.Thickness = 2
+RoundStroke.Parent = RoundToggleBtn
+
+----------------------------------------------------
+-- OPEN / CLOSE SYSTEM
+----------------------------------------------------
+CloseBtn.MouseButton1Click:Connect(function()
+	MainFrame.Visible = false
+	CodeViewerFrame.Visible = false
+	RoundToggleBtn.Visible = true
+end)
+
+RoundToggleBtn.MouseButton1Click:Connect(function()
+	RoundToggleBtn.Visible = false
+	MainFrame.Visible = true
+end)
+
+----------------------------------------------------
+-- DRAGGABLE SYSTEM
+----------------------------------------------------
+local function MakeDraggable(uiElement)
+
+	local dragging
+	local dragInput
+	local dragStart
+	local startPos
+
+	uiElement.InputBegan:Connect(function(input)
+
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+		or input.UserInputType == Enum.UserInputType.Touch then
+
+			dragging = true
+			dragStart = input.Position
+			startPos = uiElement.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	uiElement.InputChanged:Connect(function(input)
+
+		if input.UserInputType == Enum.UserInputType.MouseMovement
+		or input.UserInputType == Enum.UserInputType.Touch then
+
+			dragInput = input
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+
+		if input == dragInput and dragging then
+
+			local delta = input.Position - dragStart
+
+			uiElement.Position = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+			
+			-- Ikuti pergeseran jika CodeViewer terbuka agar tetap berada di samping
+			if uiElement == MainFrame then
+				CodeViewerFrame.Position = UDim2.new(
+					MainFrame.Position.X.Scale, 
+					MainFrame.Position.X.Offset + MainFrame.Size.X.Offset + 15, 
+					MainFrame.Position.Y.Scale, 
+					MainFrame.Position.Y.Offset
+				)
+			elseif uiElement == RoundToggleBtn then
+				CodeViewerFrame.Position = UDim2.new(
+					RoundToggleBtn.Position.X.Scale, 
+					RoundToggleBtn.Position.X.Offset + RoundToggleBtn.Size.X.Offset + 15, 
+					RoundToggleBtn.Position.Y.Scale, 
+					RoundToggleBtn.Position.Y.Offset
+				)
+			end
+		end
+	end)
+end
+
+MakeDraggable(MainFrame)
+MakeDraggable(RoundToggleBtn)
+
+----------------------------------------------------
+-- OPEN ANIMATION
+----------------------------------------------------
+MainFrame.Size = UDim2.new(0,0,0,0)
+
+TweenService:Create(
+	MainFrame,
+	TweenInfo.new(0.4, Enum.EasingStyle.Back),
+CodeTitle.Parent = CodeViewerFrame
+
+local CodeCloseBtn = Instance.new("TextButton")
+CodeCloseBtn.Size = UDim2.new(0, 20, 0, 20)
+CodeCloseBtn.Position = UDim2.new(1, -30, 0, 7)
+CodeCloseBtn.BackgroundColor3 = Color3.fromRGB(40, 10, 10)
+CodeCloseBtn.Text = "X"
+CodeCloseBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+CodeCloseBtn.TextSize = 12
+CodeCloseBtn.Font = Enum.Font.GothamBold
+CodeCloseBtn.Parent = CodeViewerFrame
+Instance.new("UICorner", CodeCloseBtn).CornerRadius = UDim.new(0, 4)
+
+local CodeScroll = Instance.new("ScrollingFrame")
+CodeScroll.Size = UDim2.new(1, -20, 1, -50)
+CodeScroll.Position = UDim2.new(0, 10, 0, 40)
+CodeScroll.BackgroundTransparency = 1
+CodeScroll.ScrollBarThickness = 5
+CodeScroll.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
+CodeScroll.Parent = CodeViewerFrame
+
+local CodeText = Instance.new("TextLabel")
+CodeText.Size = UDim2.new(1, -10, 0, 0)
+CodeText.AutomaticSize = Enum.AutomaticSize.Y
+CodeText.BackgroundTransparency = 1
+CodeText.Text = "-- Klik UI manapun untuk generate code..."
+CodeText.TextColor3 = Color3.fromRGB(240, 240, 240)
+CodeText.TextSize = 12
+CodeText.Font = Enum.Font.Code
+CodeText.TextXAlignment = Enum.TextXAlignment.Left
+CodeText.TextYAlignment = Enum.TextYAlignment.Top
+CodeText.Parent = CodeScroll
+
+CodeCloseBtn.MouseButton1Click:Connect(function()
+	CodeViewerFrame.Visible = false
+end)
+
+----------------------------------------------------
 -- SCRIPT ROW SYSTEM
 ----------------------------------------------------
 _G.EspBendaDekatActive = false -- Status Global ESP
