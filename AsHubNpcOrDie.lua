@@ -386,33 +386,38 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			end
 
-		elseif name == "Auto Task" then
+				elseif name == "Auto Task" then
 			if isOn then
 				task.spawn(function()
 					while isOn do
 						pcall(function()
 							if humPart and char then
-								local taskName = char:GetAttribute("TaskName")
-								if taskName and taskName ~= "" then
-									local yourTask, parentTask
-									for _, t in pairs(workspace:GetDescendants()) do
-										if t:IsA("ProximityPrompt") and t.Parent and t.Parent.Name == taskName then
-											yourTask = t
-											parentTask = t.Parent
-											break
-										end
+								-- 1. Cari part yang bernama "E key" di workspace
+								local targetPart = nil
+								for _, v in pairs(workspace:GetDescendants()) do
+									if v:IsA("BasePart") and v.Name == "E key" then
+										targetPart = v
+										break
 									end
-									if yourTask then
-										yourTask.Parent = char
-										yourTask.HoldDuration = 0
-										while isOn and char:GetAttribute("TaskName") == taskName do
-											yourTask:InputHoldBegin()
-											yourTask:InputHoldEnd()
-											task.wait(0.1)
-										end
-										if yourTask.Parent == char then
-											yourTask.Parent = parentTask
-										end
+								end
+								
+								-- 2. Jika part ditemukan, lakukan aksi
+								if targetPart then
+									-- Teleport pemain ke lokasi part "E key"
+									humPart.CFrame = targetPart.CFrame + Vector3.new(0, 2, 0)
+									task.wait(0.2) -- Jeda pendek agar posisi stabil setelah TP
+									
+									-- Cari ProximityPrompt di part tersebut atau di induknya
+									local prompt = targetPart:FindFirstChildOfClass("ProximityPrompt") or targetPart.Parent:FindFirstChildOfClass("ProximityPrompt")
+									
+									if prompt and isOn then
+										prompt.HoldDuration = 0 -- Mengabaikan durasi asli agar instan masuk ke proses holding
+										prompt:InputHoldBegin()  -- Mulai menekan E
+										task.wait(10)            -- Menekan selama 10 detik sesuai permintaan
+										prompt:InputHoldEnd()    -- Lepas tombol E
+									else
+										-- Jika tidak ada prompt fisik, tetap tunggu 10 detik sebelum loop mendeteksi ulang
+										task.wait(10)
 									end
 								end
 							end
@@ -422,29 +427,45 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			end
 
-		elseif name == "Auto Nearest Task" then
+		elseif name == "Auto Run when Sherrif is near" then
 			if isOn then
 				task.spawn(function()
 					while isOn do
 						pcall(function()
-							local taskName = char:GetAttribute("TaskName")
-							for _, t in pairs(workspace:GetDescendants()) do
-								if t:IsA("Model") and t.Name == taskName and t.Parent.Name == "Tasks" then
-									local hitbox = t:FindFirstChild("Hitbox")
-									if hitbox and humPart then
-										local distance = (humPart.Position - hitbox.Position).Magnitude
-										if distance <= t.ProximityPrompt.MaxActivationDistance then
-											local prompt = t.ProximityPrompt
-											prompt.HoldDuration = 0
-											prompt:InputHoldBegin()
-											task.wait(prompt.HoldDuration)
-											prompt:InputHoldEnd()
+							if humPart and char then
+								local maxDistance = 50 -- Jarak deteksi (Akan kabur jika Sheriff berada di bawah 50 studs)
+								local sheriffNear = false
+								
+								-- 1. Deteksi keberadaan Sheriff di sekitar pemain
+								for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+									if p ~= game:GetService("Players").LocalPlayer and p.Team and p.Team.Name == "Sheriffs" then
+										if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+											local dist = (humPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
+											if dist <= maxDistance then
+												sheriffNear = true
+												break
+											end
 										end
+									end
+								end
+								
+								-- 2. Jika ada Sheriff mendekat, eksekusi teleportasi darurat
+								if sheriffNear then
+									local oldCFrame = humPart.CFrame -- Simpan koordinat lokasi saat ini
+									
+									-- Teleportasi ke koordinat yang sangat jauh/aman di udara kosong
+									humPart.CFrame = CFrame.new(9999, 5000, 9999) 
+									
+									task.wait(3) -- Menunggu selama 3 detik di tempat aman
+									
+									-- Teleportasi balik ke posisi semula
+									if humPart then
+										humPart.CFrame = oldCFrame
 									end
 								end
 							end
 						end)
-						task.wait(0.3)
+						task.wait(0.5) -- Mengecek keberadaan Sheriff setiap 0.5 detik sekali agar responsif
 					end
 				end)
 			end
@@ -540,7 +561,7 @@ CreateScriptRow("Auto Server Hop", false)
 CreateScriptRow("ESP", false)
 CreateScriptRow("Auto Complete Obby", false)
 CreateScriptRow("Auto Task", false)
-CreateScriptRow("Auto Nearest Task", false)
+CreateScriptRow("Auto Run when Sherrif is near", false)
 CreateScriptRow("Inf Stamina", false)
 CreateScriptRow("Noclip", false)
 
