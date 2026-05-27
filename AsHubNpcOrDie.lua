@@ -679,14 +679,26 @@ end)
 -- BOTTOM CONTROLS & UTILITIES
 ----------------------------------------------------
 local AntiAfkBtn = Instance.new("TextButton")
-AntiAfkBtn.Size = UDim2.new(1,-30,0,40)
-AntiAfkBtn.Position = UDim2.new(0,74,1,-50)
-AntiAfkBtn.BackgroundColor3 = Color3.fromRGB(20,40,70)
+-- 1. Mengatur titik tumpu (AnchorPoint) di tengah-bawah tombol
+AntiAfkBtn.AnchorPoint = Vector2.new(0.5, 1)
+
+-- 2. Lebar diatur 100% minus 40 pixel agar ada jarak (padding) di kiri & kanan
+AntiAfkBtn.Size = UDim2.new(1, -40, 0, 40)
+
+-- 3. Posisi X diatur 0.5 (tengah), Posisi Y diatur 1 minus 15 pixel agar tidak terlalu mepet bawah
+AntiAfkBtn.Position = UDim2.new(0.5, 0, 1, -15)
+
+AntiAfkBtn.BackgroundColor3 = Color3.fromRGB(20, 40, 70)
 AntiAfkBtn.Text = "ACTIVATE ANTI AFK"
-AntiAfkBtn.TextColor3 = Color3.fromRGB(0,200,255)
+AntiAfkBtn.TextColor3 = Color3.fromRGB(0, 200, 255)
 AntiAfkBtn.TextSize = 13
 AntiAfkBtn.Font = Enum.Font.GothamBold
 AntiAfkBtn.Parent = MainFrame
+
+-- Bonus: Biar sudut tombolnya melengkung halus/aesthetic kayak menu di atasnya
+local UIModifier = Instance.new("UICorner")
+UIModifier.CornerRadius = UDim.new(0, 6)
+UIModifier.Parent = AntiAfkBtn
 
 local vu = game:GetService("VirtualUser")
 AntiAfkBtn.MouseButton1Click:Connect(function()
