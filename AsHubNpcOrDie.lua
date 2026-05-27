@@ -681,7 +681,7 @@ end)
 local AntiAfkBtn = Instance.new("TextButton")
 AntiAfkBtn.Size = UDim2.new(1,-30,0,40)
 AntiAfkBtn.Position = UDim2.new(0,15,1,-50)
-AntiAfkBtn.Position = UDim2.new(0,20,0.5,-27)
+AntiAfkBtn.BackgroundColor3 = Color3.fromRGB(20,40,70)
 AntiAfkBtn.Text = "ACTIVATE ANTI AFK"
 AntiAfkBtn.TextColor3 = Color3.fromRGB(0,200,255)
 AntiAfkBtn.TextSize = 13
