@@ -484,6 +484,7 @@ elseif name == "Speed Monitor" then
                 task.wait(0.1) -- Di-refresh setiap 0.1 detik agar tidak lag dan tetap responsif
             end
         end)
+
     else
         -- Jika dimatikan, kembalikan teks ke nama semula
         Label.Text = "Speed Monitor (OFF)"
