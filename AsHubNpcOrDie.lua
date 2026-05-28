@@ -403,74 +403,97 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			end -- PERBAIKAN: Menutup blok Auto Obby dengan benar agar tidak bocor ke bawah
 
-		elseif name == "Auto Task" then
-			if isOn then
-				task.spawn(function()
-					local visitedTasks = {}
-					while isOn do
-						pcall(function()
-							-- JIKA SHERIFF DEKAT: Auto Task mengalah dan berhenti dulu
-							if _G.SheriffNear then 
+elseif name == "Auto Task" then
+	if isOn then
+		task.spawn(function()
+			local visitedTasks = {}
+			while isOn do
+				pcall(function()
+					-- JIKA SHERIFF DEKAT: Berhenti dulu demi keamanan
+					if _G.SheriffNear then 
+						task.wait(0.5) 
+						return 
+					end
+
+					if humPart and char then
+						local targetHitbox = nil
+						local availableTasks = {}
+
+						-- 1. Scan semua Hitbox di workspace yang belum dikunjungi
+						for _, v in pairs(workspace:GetDescendants()) do
+							if v:IsA("BasePart") and v.Name == "Hitbox" then
+								if not visitedTasks[v] then
+									table.insert(availableTasks, v)
+								end
+							end
+						end
+						
+						-- 2. Reset memori jika semua Hitbox sudah selesai dikunjungi
+						if #availableTasks == 0 then
+							visitedTasks = {}
+							for _, v in pairs(workspace:GetDescendants()) do
+								if v:IsA("BasePart") and v.Name == "Hitbox" then
+									table.insert(availableTasks, v)
+								end
+							end
+						end
+
+						-- 3. Urutkan Hitbox: Utamakan yang paling aman dari Sheriff & paling dekat dari Player
+						if #availableTasks > 0 then
+							table.sort(availableTasks, function(a, b)
+								local distA_Player = (humPart.Position - a.Position).Magnitude
+								local distB_Player = (humPart.Position - b.Position).Magnitude
+								
+								-- Validasi apakah posisi fisik Sheriff tersedia di _G.SheriffPart
+								if _G.SheriffPart and _G.SheriffPart:IsA("BasePart") then
+									local distA_Sheriff = (_G.SheriffPart.Position - a.Position).Magnitude
+									local distB_Sheriff = (_G.SheriffPart.Position - b.Position).Magnitude
+									
+									-- Jika ada perbedaan jarak yang signifikan dari Sheriff, pilih yang terjauh
+									if math.abs(distA_Sheriff - distB_Sheriff) > 10 then
+										return distA_Sheriff > distB_Sheriff
+									end
+								end
+								
+								-- Jika tidak ada Sheriff / jarak Sheriff sama, pilih yang paling dekat dengan Player
+								return distA_Player < distB_Player
+							end)
+							
+							targetHitbox = availableTasks[1]
+						end
+						
+						-- 4. Eksekusi Teleport dan Interaksi ProximityPrompt
+						if targetHitbox then
+							visitedTasks[targetHitbox] = true
+							humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
+							task.wait(0.3)
+							
+							local prompt = targetHitbox:FindFirstChildOfClass("ProximityPrompt") 
+								or targetHitbox.Parent:FindFirstChildOfClass("ProximityPrompt")
+								or targetHitbox.Parent:FindFirstChild("ProximityPrompt", true)
+							
+							-- Proses menahan tombol interaksi (Bisa batal instan jika Sheriff mendekat)
+							if prompt and isOn and not _G.SheriffNear then
+								prompt.HoldDuration = 0
+								prompt:InputHoldBegin() 
+								
+								local timeElapsed = 0
+								while timeElapsed < 5.3 and isOn and not _G.SheriffNear do
+									task.wait(0.1)
+									timeElapsed = timeElapsed + 0.1
+								end
+								
+								prompt:InputHoldEnd()   
+							else
 								task.wait(0.5) 
-								return 
 							end
-
-							if humPart and char then
-								local targetHitbox = nil
-								local availableTasks = {}
-
-								for _, v in pairs(workspace:GetDescendants()) do
-									if v:IsA("BasePart") and v.Name == "Hitbox" then
-										if not visitedTasks[v] then
-											table.insert(availableTasks, v)
-										end
-									end
-								end
-								
-								if #availableTasks == 0 then
-									visitedTasks = {}
-									for _, v in pairs(workspace:GetDescendants()) do
-										if v:IsA("BasePart") and v.Name == "Hitbox" then
-											table.insert(availableTasks, v)
-										end
-									end
-								end
-
-								if #availableTasks > 0 then
-									targetHitbox = availableTasks[1]
-								end
-								
-								if targetHitbox then
-									visitedTasks[targetHitbox] = true
-									humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
-									task.wait(0.3)
-									
-									local prompt = targetHitbox:FindFirstChildOfClass("ProximityPrompt") 
-										or targetHitbox.Parent:FindFirstChildOfClass("ProximityPrompt")
-										or targetHitbox.Parent:FindFirstChild("ProximityPrompt", true)
-									
-									-- PERBAIKAN KOMBO: Proses interaksi menahan E dinamis (Bisa batal instan jika Sheriff datang)
-									if prompt and isOn and not _G.SheriffNear then
-										prompt.HoldDuration = 0
-										prompt:InputHoldBegin() 
-										
-										local timeElapsed = 0
-										while timeElapsed < 5.3 and isOn and not _G.SheriffNear do
-											task.wait(0.1)
-											timeElapsed = timeElapsed + 0.1
-										end
-										
-										prompt:InputHoldEnd()   
-									else
-										task.wait(1) 
-									end
-								end
-							end
-						end)
-						task.wait(0.1)
+						end
 					end
 				end)
+				task.wait(0.1)
 			end
+		end)
+	end
 				
 	    elseif name == "Auto Run when Sherrif is near" then
 			if isOn then
