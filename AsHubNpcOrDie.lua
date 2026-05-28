@@ -280,19 +280,58 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			end
 
-		elseif name == "Reset if Bag Full" then
+		elseif name == "Auto Sheriff" then
 			if isOn then
 				task.spawn(function()
+					local vim = game:GetService("VirtualInputManager")
+					
 					while isOn do
 						pcall(function()
-							local timerGui = LocalPlayer.PlayerGui:FindFirstChild("Timer")
-							local amt = timerGui and timerGui.Frame.Bags.CashBag.Bag.AmountCollected
-							if amt and amt.Text == "FULL!" and LocalPlayer.Team and LocalPlayer.Team.Name == "Criminals" then
-								local humanoid = char:FindFirstChildWhichIsA("Humanoid")
-								if humanoid then humanoid.Health = 0 end
+							-- 1. VALIDASI TIM: Hanya berjalan jika kamu adalah Sheriff
+							if not (LocalPlayer.Team and LocalPlayer.Team.Name == "Sheriffs") then
+								return
+							end
+
+							if humPart and char then
+								local closestCriminal = nil
+								local shortestDistance = math.huge
+
+								-- 2. CARI CRIMINAL TERDEKAT YANG MASIH HIDUP
+								for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+									if p ~= game:GetService("Players").LocalPlayer and p.Team and p.Team.Name == "Criminals" then
+										if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
+											-- Pastikan target belum mati (darah > 0)
+											if p.Character:FindFirstChildOfClass("Humanoid").Health > 0 then
+												local dist = (humPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
+												if dist < shortestDistance then
+													shortestDistance = dist
+													closestCriminal = p.Character
+												end
+											end
+										end
+									end
+								end
+
+								-- 3. EKSEKUSI (Kunci Kamera + Teleport + Klik Kiri Mouse)
+								if closestCriminal then
+									local targetPart = closestCriminal.HumanoidRootPart
+									
+									-- Kunci Pandangan Kamera ke Kepala/Badan Criminal
+									local camera = workspace.CurrentCamera
+									camera.CFrame = CFrame.new(camera.CFrame.Position, targetPart.Position)
+
+									-- Teleport Otomatis Tepat di Belakang Target (Jarak 3 Studs)
+									humPart.CFrame = targetPart.CFrame * CFrame.new(0, 0, 3)
+
+									-- PERBAIKAN: Simulasikan Klik Kiri Mouse Instan (Tekan -> Lepas)
+									-- Argumen: (X, Y, ButtonId, isDown, game, clickCount) -> ButtonId 0 = Klik Kiri
+									vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)  -- Tekan Klik Kiri
+									task.wait(0.01)
+									vim:SendMouseButtonEvent(0, 0, 0, false, game, 1) -- Lepas Klik Kiri
+								end
 							end
 						end)
-						task.wait(1)
+						task.wait(0.05) -- Kecepatan jeda loop (Semakin kecil = semakin brutal auto-click-nya)
 					end
 				end)
 			end
@@ -695,7 +734,7 @@ elseif name == "Inf Stamina" then
 		overlayButton.Name = "OverlayButton"
 		
 		-- Menggunakan Ukuran dan Posisi persis yang Anda berikan
-		overlayButton.Size = UDim2.new(0, 66, 0, 66) 
+		overlayButton.Size = UDim2.new(0, 70, 0, 70) 
 		overlayButton.Position = UDim2.new(1, -143, 1, -47) 
 		overlayButton.AnchorPoint = Vector2.new(0.5, 0.5)
 		
@@ -916,7 +955,7 @@ end
 CreateScriptRow("Super Speed", false)
 CreateScriptRow("Infinite Jump", false)
 CreateScriptRow("Cash Farm", false)
-CreateScriptRow("Reset if Bag Full", false)
+CreateScriptRow("Auto Sheriff", false)
 CreateScriptRow("Reset if Sheriff", false)
 CreateScriptRow("Auto Server Hop", false)
 CreateScriptRow("ESP", false)
