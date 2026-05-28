@@ -401,12 +401,14 @@ local function CreateScriptRow(name, defaultState)
 						end
 					end
 				end)
-			end -- PERBAIKAN: Menutup blok Auto Obby dengan benar agar tidak bocor ke bawah
-
+             end -- PERBAIKAN: Menutup blok Auto Obby dengan benar agar tidak bocor ke bawah
+				
 elseif name == "Auto Task" then
 	if isOn then
 		task.spawn(function()
 			local visitedTasks = {}
+			local vim = game:GetService("VirtualInputManager") -- Service untuk simulasi keyboard fisik
+			
 			while isOn do
 				pcall(function()
 					-- JIKA SHERIFF DEKAT: Berhenti dulu demi keamanan
@@ -462,28 +464,25 @@ elseif name == "Auto Task" then
 							targetHitbox = availableTasks[1]
 						end
 						
-						-- 4. Eksekusi Teleport dan Interaksi ProximityPrompt
+						-- 4. Eksekusi Teleport dan Tekan E Murni
 						if targetHitbox then
 							visitedTasks[targetHitbox] = true
 							humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
-							task.wait(0.3)
+							task.wait(0.3) -- Jeda setelah teleport agar posisi stabil
 							
-							local prompt = targetHitbox:FindFirstChildOfClass("ProximityPrompt") 
-								or targetHitbox.Parent:FindFirstChildOfClass("ProximityPrompt")
-								or targetHitbox.Parent:FindFirstChild("ProximityPrompt", true)
-							
-							-- Proses menahan tombol interaksi (Bisa batal instan jika Sheriff mendekat)
-							if prompt and isOn and not _G.SheriffNear then
-								prompt.HoldDuration = 0
-								prompt:InputHoldBegin() 
+							if isOn and not _G.SheriffNear then
+								-- MENGANDALKAN TEKAN KEYBOARD 'E' MURNI
+								vim:SendKeyEvent(true, Enum.KeyCode.E, false, game) -- Mulai Tekan/Tahan E
 								
 								local timeElapsed = 0
-								while timeElapsed < 5.3 and isOn and not _G.SheriffNear do
+								-- Loop menahan selama tepat 5.5 detik (Bisa batal instan jika Sheriff datang)
+								while timeElapsed < 5.5 and isOn and not _G.SheriffNear do
 									task.wait(0.1)
 									timeElapsed = timeElapsed + 0.1
 								end
 								
-								prompt:InputHoldEnd()   
+								vim:SendKeyEvent(false, Enum.KeyCode.E, false, game) -- Lepas tombol E
+								task.wait(0.2) -- Jeda tipis sebelum lanjut teleport ke part berikutnya
 							else
 								task.wait(0.5) 
 							end
