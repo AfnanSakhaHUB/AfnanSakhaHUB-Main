@@ -284,54 +284,63 @@ local function CreateScriptRow(name, defaultState)
 			if isOn then
 				task.spawn(function()
 					local vim = game:GetService("VirtualInputManager")
+					local lPlayer = game:GetService("Players").LocalPlayer
 					
 					while isOn do
 						pcall(function()
-							-- 1. VALIDASI TIM: Hanya berjalan jika kamu adalah Sheriff
-							if not (LocalPlayer.Team and LocalPlayer.Team.Name == "Sheriffs") then
+							-- 1. VALIDASI TIM: Pastikan kamu ada di tim Sheriffs
+							if not (lPlayer.Team and lPlayer.Team.Name == "Sheriffs") then
 								return
 							end
 
-							if humPart and char then
+							-- FIX UTAMA: Selalu ambil karakter dan HumPart yang paling BARU (Anti-Bug saat Respawn)
+							local currentChar = lPlayer.Character
+							local currentRoot = currentChar and currentChar:FindFirstChild("HumanoidRootPart")
+							local currentHum = currentChar and currentChar:FindFirstChildOfClass("Humanoid")
+
+							if currentRoot and currentHum and currentHum.Health > 0 then
 								local closestCriminal = nil
 								local shortestDistance = math.huge
 
 								-- 2. CARI CRIMINAL TERDEKAT YANG MASIH HIDUP
 								for _, p in pairs(game:GetService("Players"):GetPlayers()) do
-									if p ~= game:GetService("Players").LocalPlayer and p.Team and p.Team.Name == "Criminals" then
-										if p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChildOfClass("Humanoid") then
-											-- Pastikan target belum mati (darah > 0)
-											if p.Character:FindFirstChildOfClass("Humanoid").Health > 0 then
-												local dist = (humPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
+									if p ~= lPlayer and p.Team and p.Team.Name == "Criminals" then
+										local enemyChar = p.Character
+										if enemyChar and enemyChar:FindFirstChild("HumanoidRootPart") and enemyChar:FindFirstChildOfClass("Humanoid") then
+											if enemyChar:FindFirstChildOfClass("Humanoid").Health > 0 then
+												local dist = (currentRoot.Position - enemyChar.HumanoidRootPart.Position).Magnitude
 												if dist < shortestDistance then
 													shortestDistance = dist
-													closestCriminal = p.Character
+													closestCriminal = enemyChar
 												end
 											end
 										end
 									end
 								end
 
-								-- 3. EKSEKUSI (Kunci Kamera + Teleport + Klik Kiri Mouse)
+								-- 3. EKSEKUSI TELEPORT + LOCK CAMERA + AUTO CLICK
 								if closestCriminal then
 									local targetPart = closestCriminal.HumanoidRootPart
 									
-									-- Kunci Pandangan Kamera ke Kepala/Badan Criminal
+									-- Hitung posisi tepat 3 studs di belakang punggung musuh
+									local behindPosition = targetPart.CFrame * Vector3.new(0, 0, 3)
+									
+									-- FIX TELEPORT & CAMERA: Teleport sekaligus paksa badan kita menghadap musuh
+									-- Ini otomatis memaksa kamera mengikuti arah hadap karakter baru kita
+									currentRoot.CFrame = CFrame.lookAt(behindPosition.Position, targetPart.Position)
+									
+									-- Paksa Kunci Kamera Utama (Kekeran Tambahan)
 									local camera = workspace.CurrentCamera
-									camera.CFrame = CFrame.new(camera.CFrame.Position, targetPart.Position)
+									camera.CFrame = CFrame.lookAt(camera.CFrame.Position, targetPart.Position)
 
-									-- Teleport Otomatis Tepat di Belakang Target (Jarak 3 Studs)
-									humPart.CFrame = targetPart.CFrame * CFrame.new(0, 0, 3)
-
-									-- PERBAIKAN: Simulasikan Klik Kiri Mouse Instan (Tekan -> Lepas)
-									-- Argumen: (X, Y, ButtonId, isDown, game, clickCount) -> ButtonId 0 = Klik Kiri
-									vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)  -- Tekan Klik Kiri
+									-- Eksekusi Klik Kiri Mouse (Hit/Tembak)
+									vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)
 									task.wait(0.01)
-									vim:SendMouseButtonEvent(0, 0, 0, false, game, 1) -- Lepas Klik Kiri
+									vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)
 								end
 							end
 						end)
-						task.wait(0.05) -- Kecepatan jeda loop (Semakin kecil = semakin brutal auto-click-nya)
+						task.wait(0.05) -- Jeda loop (0.05 detik = nempel ketat tanpa delay)
 					end
 				end)
 			end
