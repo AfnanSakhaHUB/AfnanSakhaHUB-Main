@@ -477,10 +477,16 @@ local function CreateScriptRow(name, defaultState)
 				task.spawn(function()
 					while isOn do
 						pcall(function()
+							-- 1. VALIDASI TIM: Hanya berjalan jika pemain adalah "Criminals"
+							if not (LocalPlayer.Team and LocalPlayer.Team.Name == "Criminals") then
+								return -- Berhenti di sini jika bukan Criminals (Sheriff/Lobby dicuekin)
+							end
+
 							if humPart and char then
 								local maxDistance = 60 
 								local sheriffNear = false
 								
+								-- 2. Deteksi Keberadaan Sheriff
 								for _, p in pairs(game:GetService("Players"):GetPlayers()) do
 									if p ~= game:GetService("Players").LocalPlayer then
 										local isSheriff = false
@@ -501,26 +507,25 @@ local function CreateScriptRow(name, defaultState)
 									end
 								end
 								
-								-- 2. Proses Teleportasi Darurat ke WaterPiece
+								-- 3. Proses Teleportasi Darurat ke WaterPiece
 								if sheriffNear then
 									_G.SheriffNear = true -- Mengunci Auto Task agar melepaskan tombol E
 									
-									-- Mencari benda bernama "WaterPiece" di seluruh Workspace
 									local waterPiece = workspace:FindFirstChild("WaterPiece", true)
 									
 									if waterPiece then
-										local oldCFrame = humPart.CFrame -- Simpan posisi aman tempat kerja sebelumnya
+										local oldCFrame = humPart.CFrame -- Simpan posisi awal tempat kerja
 										
-										-- Pindah Instan ke WaterPiece (Mendukung tipe Model maupun Part biasa)
+										-- Pindah Instan ke WaterPiece
 										if waterPiece:IsA("Model") then
 											humPart.CFrame = waterPiece:GetPivot() + Vector3.new(0, 3, 0)
 										else
 											humPart.CFrame = waterPiece.CFrame + Vector3.new(0, 3, 0)
 										end
 										
-										task.wait(3) -- Menunggu selama 3 detik sesuai permintaan
+										task.wait(3) -- Sembunyi selama 3 detik
 										
-										-- Kembali ke tempat kerja awal jika fitur masih aktif
+										-- Kembali ke posisi semula jika fitur masih aktif
 										if isOn and humPart then
 											humPart.CFrame = oldCFrame
 										end
@@ -535,7 +540,7 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			else
 				_G.SheriffNear = false
-				end					
+				end				
 		
 		elseif name == "Inf Stamina" then
 			if isOn then
