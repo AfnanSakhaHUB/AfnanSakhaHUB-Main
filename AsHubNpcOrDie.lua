@@ -665,26 +665,135 @@ elseif name == "Auto Run when Sherrif is near" then
 	end
 				
 		elseif name == "Inf Stamina" then
-			if isOn then
-				task.spawn(function()
-					while isOn do
-						pcall(function()
-							local sprint = LocalPlayer.PlayerGui:FindFirstChild("Modules") and LocalPlayer.PlayerGui.Modules:FindFirstChild("Gameplay") and LocalPlayer.PlayerGui.Modules.Gameplay:FindFirstChild("Sprint")
-							if sprint and sprint:FindFirstChild("Stamina") then
-								sprint.Stamina.Value = 9e9
-							end
-						end)
-						task.wait(0.6)
-					end
-				end)
-			else
+	if isOn then
+		-- Bersihkan UI dan koneksi lama jika ada untuk mencegah duplikasi
+		if LocalPlayer.PlayerGui:FindFirstChild("InvisibleSprintGui") then
+			LocalPlayer.PlayerGui.InvisibleSprintGui:Destroy()
+		end
+		if _G.SpeedLoop then _G.SpeedLoop:Disconnect() _G.SpeedLoop = nil end
+		if _G.BtnConnection then _G.BtnConnection:Disconnect() _G.BtnConnection = nil end
+		if _G.KeyConnection then _G.KeyConnection:Disconnect() _G.KeyConnection = nil end
+
+		-- 1. Membuat ScreenGui Baru
+		local screenGui = Instance.new("ScreenGui")
+		screenGui.Name = "InvisibleSprintGui"
+		screenGui.ResetOnSpawn = false
+		screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+		screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+		-- 2. Membuat Tombol Penutup
+		local overlayButton = Instance.new("TextButton")
+		overlayButton.Name = "OverlayButton"
+		
+		-- Mengatur Ukuran dan Posisi tepat di atas tombol lari asli (sebelah kiri tombol lompat)
+		overlayButton.Size = UDim2.new(0, 65, 0, 65) 
+		overlayButton.Position = UDim2.new(1, -150, 1, -95) 
+		overlayButton.AnchorPoint = Vector2.new(0.5, 0.5)
+		
+		-- PENGATURAN AWAL: Tombol 100% Tidak Terlihat (Transparansi = 1)
+		overlayButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+		overlayButton.BackgroundTransparency = 1 
+		overlayButton.Text = "" 
+		overlayButton.BorderSizePixel = 0
+		overlayButton.ZIndex = 999 -- Lapisan paling atas untuk memblock klik asli
+
+		-- Membuat bentuk bulat seperti tombol lari/lompat bawaan
+		local uiCorner = Instance.new("UICorner")
+		uiCorner.CornerRadius = UDim.new(1, 0)
+		uiCorner.Parent = overlayButton
+		
+		overlayButton.Parent = screenGui
+
+		-- State awal status lari
+		_G.Speed22Active = false
+
+		-- Fungsi AKTIF LARI: Kecepatan 22 & Ubah Tombol jadi Muncul/Visible 0.3
+		local function enableSpeed()
+			_G.Speed22Active = true
+			
+			-- Mengubah tombol menjadi hitam transparan (Visible 0.3 artinya Transparansi 0.7)
+			overlayButton.BackgroundTransparency = 0.7 
+			
+			if _G.SpeedLoop then _G.SpeedLoop:Disconnect() end
+			
+			-- Mengunci kecepatan konstan di angka 22
+			_G.SpeedLoop = game:GetService("RunService").RenderStepped:Connect(function()
 				pcall(function()
-					local sprint = LocalPlayer.PlayerGui.Modules.Gameplay.Sprint
-					if sprint and sprint:FindFirstChild("Stamina") then
-						sprint.Stamina.Value = 6
+					local char = LocalPlayer.Character
+					if char then
+						local hum = char:FindFirstChildOfClass("Humanoid")
+						if hum and hum.WalkSpeed ~= 22 then
+							hum.WalkSpeed = 22
+						end
 					end
 				end)
+			end)
+		end
+
+		-- Fungsi MATI LARI: Kembali Normal & Ubah Tombol jadi 100% Tidak Terlihat
+		local function disableSpeed()
+			_G.Speed22Active = false
+			
+			-- Mengembalikan tombol menjadi 100% tidak terlihat (Transparansi = 1)
+			overlayButton.BackgroundTransparency = 1 
+			
+			if _G.SpeedLoop then
+				_G.SpeedLoop:Disconnect()
+				_G.SpeedLoop = nil
 			end
+			pcall(function()
+				local char = LocalPlayer.Character
+				if char then
+					local hum = char:FindFirstChildOfClass("Humanoid")
+					if hum then
+						hum.WalkSpeed = 16 -- Kecepatan normal
+					end
+				end
+			end)
+		end
+
+		-- Fungsi Toggle Pemicu ganti status
+		local function handleToggle()
+			if _G.Speed22Active then
+				disableSpeed()
+			else
+				enableSpeed()
+			end
+		end
+
+		-- Deteksi Input Klik Tombol (Mobile/PC)
+		_G.BtnConnection = overlayButton.MouseButton1Click:Connect(handleToggle)
+
+		-- Deteksi Input Tekan Tombol Shift (Khusus PC)
+		_G.KeyConnection = game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+			if gameProcessed then return end 
+			if input.KeyCode == Enum.KeyCode.LeftShift then
+				handleToggle()
+			end
+		end)
+
+	else
+		-- JIKA FITUR DI-MATIKAN DARI MENU UTAMA (isOn == false)
+		if _G.SpeedLoop then _G.SpeedLoop:Disconnect() _G.SpeedLoop = nil end
+		if _G.BtnConnection then _G.BtnConnection:Disconnect() _G.BtnConnection = nil end
+		if _G.KeyConnection then _G.KeyConnection:Disconnect() _G.KeyConnection = nil end
+		
+		local existingGui = LocalPlayer.PlayerGui:FindFirstChild("InvisibleSprintGui")
+		if existingGui then
+			existingGui:Destroy()
+		end
+		
+		-- Kembalikan kecepatan karakter menjadi normal seutuhnya
+		pcall(function()
+			local char = LocalPlayer.Character
+			if char then
+				local hum = char:FindFirstChildOfClass("Humanoid")
+				if hum then
+					hum.WalkSpeed = 16
+				end
+			end
+		end)
+	end
 
 		elseif name == "Noclip" then
 			if isOn then
