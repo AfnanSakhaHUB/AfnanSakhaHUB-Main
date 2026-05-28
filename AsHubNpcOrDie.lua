@@ -11,6 +11,7 @@ local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local MarketplaceService = game:GetService("MarketplaceService")
 
 ----------------------------------------------------
 -- SYSTEM CACHE KARAKTER UNIVERSAL (Anti Mati/Respawn)
