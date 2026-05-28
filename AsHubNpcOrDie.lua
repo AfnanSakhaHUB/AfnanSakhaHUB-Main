@@ -280,7 +280,7 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			end
 
-		elseif name == "Auto Sheriff" then
+		elseif name == "Auto Sheriff fixed" then
 			if isOn then
 				task.spawn(function()
 					local vim = game:GetService("VirtualInputManager")
@@ -741,7 +741,7 @@ elseif name == "Auto Run when Sherrif is near" then
 -- Pastikan untuk mengambil TweenService di awal script (biasanya di luar block if/else, tetapi jika tidak bisa, taruh di dalam block 'isOn')
 local TweenService = game:GetService("TweenService")
 
-elseif name == "Inf Stamina" then
+elseif name == "Inf Stamina Mobile only" then
 	if isOn then
 		-- Bersihkan UI, koneksi lama, dan tween jika ada untuk mencegah duplikasi/konflik
 		if LocalPlayer.PlayerGui:FindFirstChild("InvisibleSprintGui") then
@@ -990,14 +990,14 @@ end
 CreateScriptRow("Super Speed", false)
 CreateScriptRow("Infinite Jump", false)
 CreateScriptRow("Cash Farm", false)
-CreateScriptRow("Auto Sheriff", false)
+CreateScriptRow("Auto Sheriff fixed", false)
 CreateScriptRow("Reset if Sheriff", false)
 CreateScriptRow("Auto Server Hop", false)
 CreateScriptRow("ESP", false)
 CreateScriptRow("Auto Complete Obby", false)
 CreateScriptRow("Auto Task", false)
 CreateScriptRow("Auto Run when Sherrif is near", false)
-CreateScriptRow("Inf Stamina", false)
+CreateScriptRow("Inf Stamina Mobile only", false)
 CreateScriptRow("Noclip", false)
 
 CreateScriptButton("Update script just 50 Robux! [Thibaut_Yashin]", function()
