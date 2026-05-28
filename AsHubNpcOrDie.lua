@@ -445,7 +445,7 @@ local function CreateScriptRow(name, defaultState)
 									if prompt and isOn then
 										prompt.HoldDuration = 0
 										prompt:InputHoldBegin() 
-										task.wait(5)           -- << Sudah diubah jadi 5 detik
+										task.wait(5.3)           -- << Sudah diubah jadi 5 detik
 										prompt:InputHoldEnd()   
 									else
 										task.wait(1) 
@@ -453,7 +453,7 @@ local function CreateScriptRow(name, defaultState)
 								end
 							end
 						end)
-						task.wait(0.5)
+						task.wait(0.1)
 					end
 				end)
 			end
