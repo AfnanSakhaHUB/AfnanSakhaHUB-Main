@@ -927,9 +927,6 @@ CreateScriptRow("Auto Run when Sherrif is near", false)
 CreateScriptRow("Inf Stamina", false)
 CreateScriptRow("Noclip", false)
 
--- Pastikan MarketplaceService sudah dipanggil (bisa ditaruh di sini atau di bagian paling atas script)
-local MarketplaceService = game:GetService("MarketplaceService")
-
 CreateScriptButton("Update script just 50 Robux! [Thibaut_Yashin]", function()
     local gamepassId = 1859876575
     pcall(function()
