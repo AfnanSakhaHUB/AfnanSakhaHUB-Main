@@ -957,7 +957,6 @@ elseif name == "Immortality" then
 		if _G.CharAddedConnection then _G.CharAddedConnection:Disconnect() _G.CharAddedConnection = nil end
 end
 
-
 local function CreateScriptButton(name, callback)
 	local Row = Instance.new("Frame")
 	Row.Size = UDim2.new(1,-10,0,45)
