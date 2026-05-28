@@ -932,21 +932,89 @@ CreateScriptButton("Update script just 50 Robux! [Thibaut_Yashin]", function()
 	local gamepassId = 1859876575
 	local gamepassLink = "https://www.roblox.com/game-pass/" .. gamepassId
 
-	-- 1. Tetap mencoba memunculkan prompt (jika game kebetulan mengizinkan)
+	-- 1. Mencoba memunculkan prompt (antisipasi jika game mengizinkan)
 	pcall(function()
 		game:GetService("MarketplaceService"):PromptGamePassPurchase(player, gamepassId)
 	end)
 	
-	-- 2. Solusi alternatif: Menyalin link ke clipboard player otomatis (Bisa untuk semua executor)
+	-- 2. Menyalin link ke clipboard player otomatis
 	if setclipboard then
 		setclipboard(gamepassLink)
-		-- Memberi tahu player lewat sistem chat lokal agar mereka tahu link sudah dicopy
-		game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
-			Text = "[AfnanSakhaHub]: 50 Robux Gamepass link has been copied! Please paste (Ctrl+V) it in your browser to purchase.",
-			Color = Color3.fromRGB(0, 255, 255),
-			Font = Enum.Font.GothamBold
-		})
 	end
+
+	-- 3. MEMUNCULKAN NOTIFIKASI MODERN ANDA (AfnanSakhaHub)
+	local PlayerGui = player:WaitForChild("PlayerGui")
+
+	local screenGui = Instance.new("ScreenGui")
+	screenGui.Name = "ModernNotificationGui"
+	screenGui.ResetOnSpawn = false
+	screenGui.Parent = PlayerGui
+
+	local frame = Instance.new("Frame")
+	frame.Name = "NotificationFrame"
+	frame.Size = UDim2.new(0, 320, 0, 95)
+	frame.Position = UDim2.new(1, 50, 1, -110) 
+	frame.BackgroundColor3 = Color3.fromRGB(15, 23, 42) -- Dark Blue Slate
+	frame.BorderSizePixel = 0
+	frame.Parent = screenGui
+
+	local uiCorner = Instance.new("UICorner")
+	uiCorner.CornerRadius = UDim.new(0, 12)
+	uiCorner.Parent = frame
+
+	local uiStroke = Instance.new("UIStroke")
+	uiStroke.Color = Color3.fromRGB(56, 189, 248) -- Sky Blue Neon
+	uiStroke.Thickness = 2
+	uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	uiStroke.Parent = frame
+
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "Title"
+	titleLabel.Size = UDim2.new(1, -30, 0, 25)
+	titleLabel.Position = UDim2.new(0, 15, 0, 12)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Text = "[AFNAN SAKHA HUB]" -- Sudah diperbarui!
+	titleLabel.TextColor3 = Color3.fromRGB(56, 189, 248)
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextSize = 14
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	titleLabel.Parent = frame
+
+	local descLabel = Instance.new("TextLabel")
+	descLabel.Name = "Description"
+	descLabel.Size = UDim2.new(1, -30, 0, 45)
+	descLabel.Position = UDim2.new(0, 15, 0, 37)
+	descLabel.BackgroundTransparency = 1
+	descLabel.Text = "The 50 Robux Gamepass link has been copied! Please paste (Ctrl+V) it in your browser to purchase."
+	descLabel.TextColor3 = Color3.fromRGB(241, 245, 249)
+	descLabel.Font = Enum.Font.Gotham
+	descLabel.TextSize = 12
+	descLabel.TextWrapped = true
+	descLabel.TextXAlignment = Enum.TextXAlignment.Left
+	descLabel.TextYAlignment = Enum.TextYAlignment.Top
+	descLabel.Parent = frame
+
+	-- ANIMASI TWEEN
+	local targetPosition = UDim2.new(1, -340, 1, -110)
+	local hidePosition = UDim2.new(1, 50, 1, -110)
+
+	local tweenInfoIn = TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
+	local tweenInfoOut = TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+
+	local tweenIn = TweenService:Create(frame, tweenInfoIn, {Position = targetPosition})
+	local tweenOut = TweenService:Create(frame, tweenInfoOut, {Position = hidePosition})
+
+	-- Jalankan Animasi Masuk
+	tweenIn:Play()
+
+	-- Alur keluar asinkronus
+	task.spawn(function()
+		task.wait(6)
+		tweenOut:Play()
+		tweenOut.Completed:Connect(function()
+			screenGui:Destroy()
+		end)
+	end)
 end)
 
 CreateScriptButton("Server Hop", function()
