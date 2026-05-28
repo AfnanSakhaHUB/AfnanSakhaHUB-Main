@@ -927,14 +927,26 @@ CreateScriptRow("Auto Run when Sherrif is near", false)
 CreateScriptRow("Inf Stamina", false)
 CreateScriptRow("Noclip", false)
 
--- Pastikan MarketplaceService sudah dipanggil (bisa ditaruh di sini atau di bagian paling atas script)
-local MarketplaceService = game:GetService("MarketplaceService")
-
 CreateScriptButton("Update script just 50 Robux! [Thibaut_Yashin]", function()
-    local gamepassId = 1859876575
-    pcall(function()
-        MarketplaceService:PromptGamePassPurchase(LocalPlayer, gamepassId)
-    end)
+	local player = game.Players.LocalPlayer
+	local gamepassId = 1859876575
+	local gamepassLink = "https://www.roblox.com/game-pass/" .. gamepassId
+
+	-- 1. Tetap mencoba memunculkan prompt (jika game kebetulan mengizinkan)
+	pcall(function()
+		game:GetService("MarketplaceService"):PromptGamePassPurchase(player, gamepassId)
+	end)
+	
+	-- 2. Solusi alternatif: Menyalin link ke clipboard player otomatis (Bisa untuk semua executor)
+	if setclipboard then
+		setclipboard(gamepassLink)
+		-- Memberi tahu player lewat sistem chat lokal agar mereka tahu link sudah dicopy
+		game:GetService("StarterGui"):SetCore("ChatMakeSystemMessage", {
+			Text = "[AfnanSakhaHub]: 50 Robux Gamepass link has been copied! Please paste (Ctrl+V) it in your browser to purchase.",
+			Color = Color3.fromRGB(0, 255, 255),
+			Font = Enum.Font.GothamBold
+		})
+	end
 end)
 
 CreateScriptButton("Server Hop", function()
