@@ -495,74 +495,93 @@ elseif name == "Auto Task" then
 	end
 				
 	    elseif name == "Auto Run when Sherrif is near" then
-			if isOn then
-				task.spawn(function()
-					while isOn do
-						pcall(function()
-							-- 1. VALIDASI TIM: Hanya berjalan jika pemain adalah "Criminals"
-							if not (LocalPlayer.Team and LocalPlayer.Team.Name == "Criminals") then
-								return -- Berhenti di sini jika bukan Criminals (Sheriff/Lobby dicuekin)
-							end
-
-							if humPart and char then
-								local maxDistance = 60 
-								local sheriffNear = false
-								
-								-- 2. Deteksi Keberadaan Sheriff
-								for _, p in pairs(game:GetService("Players"):GetPlayers()) do
-									if p ~= game:GetService("Players").LocalPlayer then
-										local isSheriff = false
-										
-										if p.Team and string.find(p.Team.Name:lower(), "sheriff") then
-											isSheriff = true
-										elseif p.Character and (p.Character:FindFirstChild("Gun") or p.Character:FindFirstChild("Revolver") or p.Character:FindFirstChildWhichIsA("Tool")) then
-											isSheriff = true
-										end
-										
-										if isSheriff and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-											local dist = (humPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
-											if dist <= maxDistance then
-												sheriffNear = true
-												break
-											end
-										end
-									end
-								end
-								
-								-- 3. Proses Teleportasi Darurat ke WaterPiece
-								if sheriffNear then
-									_G.SheriffNear = true -- Mengunci Auto Task agar melepaskan tombol E
-									
-									local waterPiece = workspace:FindFirstChild("WaterPiece", true)
-									
-									if waterPiece then
-										local oldCFrame = humPart.CFrame -- Simpan posisi awal tempat kerja
-										
-										-- Pindah Instan ke WaterPiece
-										if waterPiece:IsA("Model") then
-											humPart.CFrame = waterPiece:GetPivot() + Vector3.new(0, 3, 0)
-										else
-											humPart.CFrame = waterPiece.CFrame + Vector3.new(0, 3, 0)
-										end
-										
-										task.wait(3) -- Sembunyi selama 3 detik
-										
-										-- Kembali ke posisi semula jika fitur masih aktif
-										if isOn and humPart then
-											humPart.CFrame = oldCFrame
-										end
-									end
-									_G.SheriffNear = false -- Membuka kembali ijin jalan untuk Auto Task
-								end
-							end
-						end)
-						task.wait(0.1) 
+	if isOn then
+		task.spawn(function()
+			while isOn do
+				pcall(function()
+					-- 1. VALIDASI TIM: Hanya berjalan jika pemain adalah "Criminals"
+					if not (LocalPlayer.Team and LocalPlayer.Team.Name == "Criminals") then
+						return 
 					end
-					_G.SheriffNear = false
+
+					if humPart and char then
+						local maxDistance = 60 
+						local sheriffNear = false
+						local detectedSheriffPart = nil
+						
+						-- 2. Deteksi Keberadaan Sheriff
+						for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+							if p ~= game:GetService("Players").LocalPlayer then
+								local isSheriff = false
+								
+								if p.Team and string.find(p.Team.Name:lower(), "sheriff") then
+									isSheriff = true
+								elseif p.Character and (p.Character:FindFirstChild("Gun") or p.Character:FindFirstChild("Revolver") or p.Character:FindFirstChildWhichIsA("Tool")) then
+									isSheriff = true
+								end
+								
+								if isSheriff and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+									local sPart = p.Character.HumanoidRootPart
+									local dist = (humPart.Position - sPart.Position).Magnitude
+									if dist <= maxDistance then
+										sheriffNear = true
+										detectedSheriffPart = sPart
+										break
+									end
+								end
+							end
+						end
+						
+						-- Sinkronisasi posisi fisik Sheriff ke variabel global agar dibaca script Auto Task
+						_G.SheriffPart = detectedSheriffPart
+						
+						-- 3. Proses Evakuasi Darurat
+						if sheriffNear then
+							_G.SheriffNear = true -- Mengunci Auto Task agar berhenti berinteraksi
+							
+							local oldPos = humPart.Position -- Simpan posisi koordinat terakhir
+							
+							-- [PERBAIKAN]: Teleport instan ke langit ekstrem (Y = 4000) agar jauh di atas map & bebas void
+							humPart.CFrame = CFrame.new(oldPos.X, 4000, oldPos.Z)
+							task.wait(0.5) -- Jeda sangat singkat di langit untuk memastikan posisi aman
+							
+							-- [PERBAIKAN]: Cari Hitbox terdekat lainnya yang BERBEDA dari posisi tadi
+							local availableHitboxes = {}
+							for _, v in pairs(workspace:GetDescendants()) do
+								if v:IsA("BasePart") and v.Name == "Hitbox" then
+									-- Filter: Pastikan jarak Hitbox baru > 20 stud dari tempat Sheriff tadi agar tidak balik ke tempat yang sama
+									if (v.Position - oldPos).Magnitude > 20 then
+										table.insert(availableHitboxes, v)
+									end
+								end
+							end
+							
+							-- Sortir untuk mencari yang paling dekat dari posisi lama kita (tapi versi aman/berbeda)
+							table.sort(availableHitboxes, function(a, b)
+								return (oldPos - a.Position).Magnitude < (oldPos - b.Position).Magnitude
+							end)
+							
+							local targetHitbox = availableHitboxes[1]
+							
+							-- Teleport dari langit turun ke Hitbox baru yang aman
+							if targetHitbox and isOn and humPart then
+								humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
+								task.wait(0.3)
+							end
+							
+							_G.SheriffNear = false -- Membuka kembali gembok Auto Task untuk lanjut kerja
+						end
+					end
 				end)
-			else
-				_G.SheriffNear = false
-				end				
+				task.wait(0.1) 
+			end
+			_G.SheriffNear = false
+			_G.SheriffPart = nil
+		end)
+	else
+		_G.SheriffNear = false
+		_G.SheriffPart = nil
+	end
 		
 		elseif name == "Inf Stamina" then
 			if isOn then
