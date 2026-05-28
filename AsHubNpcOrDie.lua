@@ -406,6 +406,7 @@ local function CreateScriptRow(name, defaultState)
 elseif name == "Auto Task" then
 	if isOn then
 		task.spawn(function()
+			local visitedTasks = {}
 			local vim = game:GetService("VirtualInputManager") -- Service untuk simulasi keyboard fisik
 			
 			while isOn do
@@ -416,23 +417,80 @@ elseif name == "Auto Task" then
 						return 
 					end
 
-					-- 1. Scan semua Hitbox, perbesar ukurannya, dan buat transparan
-					for _, v in pairs(workspace:GetDescendants()) do
-						if v:IsA("BasePart") and v.Name == "Hitbox" then
-							v.Size = Vector3.new(500, 500, 500) -- Mengubah ukuran menjadi SANGAT BESAR
-							v.Transparency = 0              -- Menjadikannya terlihat (Visible setengah transparan)
-							v.CanCollide = false               -- WAJIB: Agar karaktermu tidak mental/terjebak di dalam part
-						end
-					end
+					-- VALIDASI TIM: Hanya memproses jika pemain adalah "Criminals"
+					if LocalPlayer.Team and LocalPlayer.Team.Name == "Criminals" then
+						if humPart and char then
+							local targetHitbox = nil
+							local availableTasks = {}
 
-					-- 2. Otomatis klik Key E secara terus-menerus (Spam Klik)
-					if isOn and not _G.SheriffNear then
-						vim:SendKeyEvent(true, Enum.KeyCode.E, false, game)  -- Tekan E
-						task.wait(0.05)                                      -- Jeda sangat singkat
-						vim:SendKeyEvent(false, Enum.KeyCode.E, false, game) -- Lepas E
+							-- 1. Scan semua Hitbox di workspace yang belum dikunjungi
+							for _, v in pairs(workspace:GetDescendants()) do
+								if v:IsA("BasePart") and v.Name == "Hitbox" then
+									if not visitedTasks[v] then
+										table.insert(availableTasks, v)
+									end
+								end
+							end
+							
+							-- 2. Reset memori jika semua Hitbox sudah selesai dikunjungi
+							if #availableTasks == 0 then
+								visitedTasks = {}
+								for _, v in pairs(workspace:GetDescendants()) do
+									if v:IsA("BasePart") and v.Name == "Hitbox" then
+										table.insert(availableTasks, v)
+									end
+								end
+							end
+
+							-- 3. Urutkan Hitbox berdasarkan jarak TERDEKAT dari Player (Index 1 = Terdekat, Index terakhir = Terjauh)
+							if #availableTasks > 0 then
+								table.sort(availableTasks, function(a, b)
+									local distA = (humPart.Position - a.Position).Magnitude
+									local distB = (humPart.Position - b.Position).Magnitude
+									return distA < distB -- Terdekat ditaruh di paling atas
+								end)
+								
+								-- 4. BUANG 4 HITBOX TERJAUH (Hanya dieksekusi saat berstatus Criminals & jumlah hitbox mencukupi)
+								if #availableTasks > 4 then
+									for i = 1, 4 do
+										table.remove(availableTasks, #availableTasks) -- Menghapus list dari urutan paling belakang (terjauh)
+									end
+								end
+								
+								-- Target otomatis memilih yang paling dekat (urutan nomor 1) setelah disaring
+								targetHitbox = availableTasks[1]
+							end
+							
+							-- 5. Eksekusi Teleport dan Tekan E Murni
+							if targetHitbox then
+								visitedTasks[targetHitbox] = true
+								humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
+								task.wait(0.3) -- Jeda setelah teleport agar posisi stabil
+								
+								-- Cek ulang kondisi sebelum menekan E
+								if isOn and not _G.SheriffNear and (LocalPlayer.Team and LocalPlayer.Team.Name == "Criminals") then
+									vim:SendKeyEvent(true, Enum.KeyCode.E, false, game) -- Tahan E
+									
+									local timeElapsed = 0
+									-- Loop menahan selama 5.5 detik (Bisa batal instan jika Sheriff datang atau tim berubah)
+									while timeElapsed < 5.5 and isOn and not _G.SheriffNear and (LocalPlayer.Team and LocalPlayer.Team.Name == "Criminals") do
+										task.wait(0.1)
+										timeElapsed = timeElapsed + 0.1
+									end
+									
+									vim:SendKeyEvent(false, Enum.KeyCode.E, false, game) -- Lepas E
+									task.wait(0.2) -- Jeda singkat sebelum lanjut ke task terdekat berikutnya
+								else
+									task.wait(0.5) 
+								end
+							end
+						end
+					else
+						-- Jika bukan tim Criminals (misal di Lobby), script akan diam/menunggu
+						task.wait(1)
 					end
 				end)
-				task.wait(0.1) -- Jeda loop agar game tidak lag/crash
+				task.wait(0.1)
 			end
 		end)
 	end
