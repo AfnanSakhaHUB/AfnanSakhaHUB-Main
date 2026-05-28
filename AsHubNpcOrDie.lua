@@ -1,4 +1,4 @@
---// UNIVERSAL AFNANSAKHA HUB (FULLY UNIVERSAL PROXIMITY/TASK AUTO-FARM)
+--//  UNIVERSAL AFNANSAKHA HUB (FULLY UNIVERSAL PROXIMITY/TASK AUTO-FARM)
 --// Tempatkan di: StarterGui -> LocalScript atau langsung jalankan via Executor Anda
 
 local Players = game:GetService("Players")
@@ -11,6 +11,7 @@ local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
 ----------------------------------------------------
 -- SYSTEM CACHE KARAKTER UNIVERSAL (Anti Mati/Respawn)
 ----------------------------------------------------
