@@ -876,28 +876,6 @@ elseif name == "Inf Stamina" then
 	end)
 end
 
-elseif name == "Rickroll" then
-			if isOn then
-				local function NoclipLoop()
-					if char then
-						for _, child in pairs(char:GetDescendants()) do
-							if child:IsA("BasePart") and child.CanCollide == true then
-								child.CanCollide = false
-							end
-						end
-					end
-				end
-				_G.NoclippingHook = RunService.Stepped:Connect(NoclipLoop)
-			else
-				if _G.NoclippingHook then
-					_G.NoclippingHook:Disconnect()
-					_G.NoclippingHook = nil
-				end
-			end
-		end
-	end)
-end
-
 local function CreateScriptButton(name, callback)
 	local Row = Instance.new("Frame")
 	Row.Size = UDim2.new(1,-10,0,45)
@@ -947,7 +925,6 @@ CreateScriptRow("Auto Task", false)
 CreateScriptRow("Auto Run when Sherrif is near", false)
 CreateScriptRow("Inf Stamina", false)
 CreateScriptRow("Noclip", false)
-CreateScriptRow("Rickroll", false)
 
 CreateScriptButton("Update script just 50 Robux! [Thibaut_Yashin]", function()
 	local player = game.Players.LocalPlayer
