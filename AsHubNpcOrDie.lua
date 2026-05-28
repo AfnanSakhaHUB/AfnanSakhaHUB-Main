@@ -471,8 +471,8 @@ local function CreateScriptRow(name, defaultState)
 					end
 				end)
 			end
-								
-		elseif name == "Auto Run when Sherrif is near" then
+				
+	    elseif name == "Auto Run when Sherrif is near" then
 			if isOn then
 				task.spawn(function()
 					while isOn do
@@ -501,29 +501,31 @@ local function CreateScriptRow(name, defaultState)
 									end
 								end
 								
+								-- 2. Proses Teleportasi Darurat ke WaterPiece
 								if sheriffNear then
-									_G.SheriffNear = true 
+									_G.SheriffNear = true -- Mengunci Auto Task agar melepaskan tombol E
 									
-									local lobby = workspace:FindFirstChild("Lobby", true) 
-										or workspace:FindFirstChild("SpawnLocation", true) 
-										or workspace:FindFirstChild("Spawn", true)
+									-- Mencari benda bernama "WaterPiece" di seluruh Workspace
+									local waterPiece = workspace:FindFirstChild("WaterPiece", true)
 									
-									if lobby then
-										local oldCFrame = humPart.CFrame 
+									if waterPiece then
+										local oldCFrame = humPart.CFrame -- Simpan posisi aman tempat kerja sebelumnya
 										
-										if lobby:IsA("Model") then
-											humPart.CFrame = lobby:GetPivot() + Vector3.new(0, 3, 0)
+										-- Pindah Instan ke WaterPiece (Mendukung tipe Model maupun Part biasa)
+										if waterPiece:IsA("Model") then
+											humPart.CFrame = waterPiece:GetPivot() + Vector3.new(0, 3, 0)
 										else
-											humPart.CFrame = lobby.CFrame + Vector3.new(0, 3, 0)
+											humPart.CFrame = waterPiece.CFrame + Vector3.new(0, 3, 0)
 										end
 										
-										task.wait(3) 
+										task.wait(3) -- Menunggu selama 3 detik sesuai permintaan
 										
-										if isOn and humPart and not sheriffNear then
+										-- Kembali ke tempat kerja awal jika fitur masih aktif
+										if isOn and humPart then
 											humPart.CFrame = oldCFrame
 										end
 									end
-									_G.SheriffNear = false 
+									_G.SheriffNear = false -- Membuka kembali ijin jalan untuk Auto Task
 								end
 							end
 						end)
@@ -533,8 +535,8 @@ local function CreateScriptRow(name, defaultState)
 				end)
 			else
 				_G.SheriffNear = false
-			end -- PERBAIKAN: Membetulkan posisi penutup blok 'if' agar menyatu dengan rantai utama
-
+				end					
+		
 		elseif name == "Inf Stamina" then
 			if isOn then
 				task.spawn(function()
