@@ -927,24 +927,12 @@ CreateScriptRow("Auto Run when Sherrif is near", false)
 CreateScriptRow("Inf Stamina", false)
 CreateScriptRow("Noclip", false)
 
-CreateScriptButton("Kill Nearest NPCs", function()
-	for i, v in ipairs(Players:GetPlayers()) do
-		if v == LocalPlayer and v.Character then
-			Instance.new("Folder", v.Character).Name = "testt"
-		end
-	end
-	task.wait(0.5)
-	for i, v in ipairs(workspace:GetChildren()) do
-		if v:FindFirstChild("testt") == nil and v:FindFirstChild("Died") == nil and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
-			local Magnitude = (humPart.Position - v.HumanoidRootPart.Position).Magnitude
-			if Magnitude <= 50 then
-				v.Humanoid.RigType = Enum.HumanoidRigType.R6
-				v.Humanoid.Health = 0
-				Instance.new("Folder", v).Name = "Died"
-			end
-		end
-	end
-	if char and char:FindFirstChild("testt") then char.testt:Destroy() end
+CreateScriptButton("Update script just 50 Robux! [Thibaut_Yashin]", function()
+	local player = game.Players.LocalPlayer
+	local gamepass = 1859876575 -- ID Gamepass Anda
+
+	-- Menggunakan MarketplaceService persis seperti di screenshot
+	game:GetService("MarketplaceService"):PromptGamePassPurchase(player, gamepass)
 end)
 
 CreateScriptButton("Server Hop", function()
