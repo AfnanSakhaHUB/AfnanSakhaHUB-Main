@@ -664,28 +664,37 @@ elseif name == "Auto Run when Sherrif is near" then
 		_G.SheriffPart = nil
 	end
 				
-		elseif name == "Inf Stamina" then
+-- Pastikan untuk mengambil TweenService di awal script (biasanya di luar block if/else, tetapi jika tidak bisa, taruh di dalam block 'isOn')
+local TweenService = game:GetService("TweenService")
+
+elseif name == "Inf Stamina" then
 	if isOn then
-		-- Bersihkan UI dan koneksi lama jika ada untuk mencegah duplikasi
+		-- Bersihkan UI, koneksi lama, dan tween jika ada untuk mencegah duplikasi/konflik
 		if LocalPlayer.PlayerGui:FindFirstChild("InvisibleSprintGui") then
 			LocalPlayer.PlayerGui.InvisibleSprintGui:Destroy()
 		end
 		if _G.SpeedLoop then _G.SpeedLoop:Disconnect() _G.SpeedLoop = nil end
+		if _G.LayeringLoop then _G.LayeringLoop:Disconnect() _G.LayeringLoop = nil end
 		if _G.BtnConnection then _G.BtnConnection:Disconnect() _G.BtnConnection = nil end
 		if _G.KeyConnection then _G.KeyConnection:Disconnect() _G.KeyConnection = nil end
+		
+		-- Batalkan tween FOV lama jika ada
+		if _G.SprintTween then _G.SprintTween:Cancel() _G.SprintTween = nil end
+		if _G.NormalTween then _G.NormalTween:Cancel() _G.NormalTween = nil end
 
-		-- 1. Membuat ScreenGui Baru
+		-- 1. Membuat ScreenGui Baru dengan DisplayOrder Tinggi
 		local screenGui = Instance.new("ScreenGui")
 		screenGui.Name = "InvisibleSprintGui"
 		screenGui.ResetOnSpawn = false
 		screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+		screenGui.DisplayOrder = 9999 -- Mengatur DisplayOrder ScreenGui agar sangat tinggi
 		screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
-		-- 2. Membuat Tombol Penutup
+		-- 2. Membuat Tombol Penutup dengan ZIndex Sangat Tinggi
 		local overlayButton = Instance.new("TextButton")
 		overlayButton.Name = "OverlayButton"
 		
-		-- Mengatur Ukuran dan Posisi tepat di atas tombol lari asli (sebelah kiri tombol lompat)
+		-- Menggunakan Ukuran dan Posisi persis yang Anda berikan
 		overlayButton.Size = UDim2.new(0, 66, 0, 66) 
 		overlayButton.Position = UDim2.new(1, -143, 1, -47) 
 		overlayButton.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -695,9 +704,9 @@ elseif name == "Auto Run when Sherrif is near" then
 		overlayButton.BackgroundTransparency = 1 
 		overlayButton.Text = "" 
 		overlayButton.BorderSizePixel = 0
-		overlayButton.ZIndex = 999 -- Lapisan paling atas untuk memblock klik asli
+		overlayButton.ZIndex = 999999999 -- Lapisan paling atas untuk memblock klik asli
 
-		-- Membuat bentuk bulat seperti tombol lari/lompat bawaan
+		-- Membuat bentuk bulat seperti tombol bawaan
 		local uiCorner = Instance.new("UICorner")
 		uiCorner.CornerRadius = UDim.new(1, 0)
 		uiCorner.Parent = overlayButton
@@ -707,12 +716,46 @@ elseif name == "Auto Run when Sherrif is near" then
 		-- State awal status lari
 		_G.Speed22Active = false
 
-		-- Fungsi AKTIF LARI: Kecepatan 22 & Ubah Tombol jadi Muncul/Visible 0.3
+		-- --- Pengaturan Efek FOV ---
+		-- Menyimpan FOV asli pemain
+		local currentCamera = game.Workspace.CurrentCamera
+		_G.OriginalFOV = currentCamera.FieldOfView
+		-- FOV saat berlari (Asli + 20, bisa diubah)
+		_G.SprintFOV = _G.OriginalFOV + 20 
+
+		-- Info Tween (Durasi, Gaya Easing, Arah Easing)
+		_G.SprintTweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+
+		-- Membuat Tweens
+		_G.SprintTween = TweenService:Create(currentCamera, _G.SprintTweenInfo, {FieldOfView = _G.SprintFOV})
+		_G.NormalTween = TweenService:Create(currentCamera, _G.SprintTweenInfo, {FieldOfView = _G.OriginalFOV})
+		-- --- Akhir Pengaturan Efek FOV ---
+
+		-- 3. --- FIX LAYERING: Loop Constan untuk Memaksa Layering ---
+		_G.LayeringLoop = game:GetService("RunService").Heartbeat:Connect(function()
+			pcall(function()
+				-- Memaksa DisplayOrder ScreenGui tetap tinggi
+				if screenGui and screenGui.Parent then
+					screenGui.DisplayOrder = 9999
+				end
+				-- Memaksa ZIndex tombol tetap sangat tinggi
+				if overlayButton and overlayButton.Parent then
+					overlayButton.ZIndex = 999999999
+				end
+			end)
+		end)
+		-- --- Akhir FIX LAYERING ---
+
+		-- Fungsi AKTIF LARI: Kecepatan 22 & Efek FOV & Ubah Tombol jadi Muncul/Visible 0.3
 		local function enableSpeed()
 			_G.Speed22Active = true
 			
 			-- Mengubah tombol menjadi hitam transparan (Visible 0.3 artinya Transparansi 0.7)
 			overlayButton.BackgroundTransparency = 0.7 
+
+			-- Mainkan efek tarikan layar (FOV)
+			_G.NormalTween:Cancel()
+			_G.SprintTween:Play()
 			
 			if _G.SpeedLoop then _G.SpeedLoop:Disconnect() end
 			
@@ -730,12 +773,16 @@ elseif name == "Auto Run when Sherrif is near" then
 			end)
 		end
 
-		-- Fungsi MATI LARI: Kembali Normal & Ubah Tombol jadi 100% Tidak Terlihat
+		-- Fungsi MATI LARI: Kembali Normal & Reset FOV & Ubah Tombol jadi 100% Tidak Terlihat
 		local function disableSpeed()
 			_G.Speed22Active = false
 			
 			-- Mengembalikan tombol menjadi 100% tidak terlihat (Transparansi = 1)
 			overlayButton.BackgroundTransparency = 1 
+
+			-- Kembali ke FOV normal
+			_G.SprintTween:Cancel()
+			_G.NormalTween:Play()
 			
 			if _G.SpeedLoop then
 				_G.SpeedLoop:Disconnect()
@@ -775,9 +822,21 @@ elseif name == "Auto Run when Sherrif is near" then
 	else
 		-- JIKA FITUR DI-MATIKAN DARI MENU UTAMA (isOn == false)
 		if _G.SpeedLoop then _G.SpeedLoop:Disconnect() _G.SpeedLoop = nil end
+		if _G.LayeringLoop then _G.LayeringLoop:Disconnect() _G.LayeringLoop = nil end
 		if _G.BtnConnection then _G.BtnConnection:Disconnect() _G.BtnConnection = nil end
 		if _G.KeyConnection then _G.KeyConnection:Disconnect() _G.KeyConnection = nil end
 		
+		-- Batalkan tween dan reset variabel FOV global
+		if _G.SprintTween then _G.SprintTween:Cancel() _G.SprintTween = nil end
+		if _G.NormalTween then _G.NormalTween:Cancel() _G.NormalTween = nil end
+		-- Kembalikan FOV ke normal (just in case)
+		pcall(function()
+			game.Workspace.CurrentCamera.FieldOfView = _G.OriginalFOV
+		end)
+		_G.OriginalFOV = nil
+		_G.SprintFOV = nil
+		_G.SprintTweenInfo = nil
+
 		local existingGui = LocalPlayer.PlayerGui:FindFirstChild("InvisibleSprintGui")
 		if existingGui then
 			existingGui:Destroy()
@@ -794,7 +853,7 @@ elseif name == "Auto Run when Sherrif is near" then
 			end
 		end)
 	end
-
+				
 		elseif name == "Noclip" then
 			if isOn then
 				local function NoclipLoop()
