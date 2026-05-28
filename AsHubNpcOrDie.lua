@@ -419,8 +419,8 @@ elseif name == "Auto Task" then
 					-- 1. Scan semua Hitbox, perbesar ukurannya, dan buat transparan
 					for _, v in pairs(workspace:GetDescendants()) do
 						if v:IsA("BasePart") and v.Name == "Hitbox" then
-							v.Size = Vector3.new(100, 100, 100) -- Mengubah ukuran menjadi SANGAT BESAR
-							v.Transparency = 0.5               -- Menjadikannya terlihat (Visible setengah transparan)
+							v.Size = Vector3.new(500, 500, 500) -- Mengubah ukuran menjadi SANGAT BESAR
+							v.Transparency = 0              -- Menjadikannya terlihat (Visible setengah transparan)
 							v.CanCollide = false               -- WAJIB: Agar karaktermu tidak mental/terjebak di dalam part
 						end
 					end
