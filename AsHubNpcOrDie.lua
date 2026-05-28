@@ -493,8 +493,8 @@ elseif name == "Auto Task" then
 			end
 		end)
 	end
-				
-	    elseif name == "Auto Run when Sherrif is near" then
+			 
+elseif name == "Auto Run when Sherrif is near" then
 	if isOn then
 		task.spawn(function()
 			while isOn do
@@ -532,44 +532,65 @@ elseif name == "Auto Task" then
 							end
 						end
 						
-						-- Sinkronisasi posisi fisik Sheriff ke variabel global agar dibaca script Auto Task
+						-- Sinkronisasi data posisi Sheriff ke global agar dibaca script Auto Task
 						_G.SheriffPart = detectedSheriffPart
 						
 						-- 3. Proses Evakuasi Darurat
 						if sheriffNear then
-							_G.SheriffNear = true -- Mengunci Auto Task agar berhenti berinteraksi
+							_G.SheriffNear = true -- Mengunci Auto Task agar berhenti menekan E
 							
-							local oldPos = humPart.Position -- Simpan posisi koordinat terakhir
+							local oldPos = humPart.Position -- Simpan posisi koordinat terakhir di tanah
 							
-							-- [PERBAIKAN]: Teleport instan ke langit ekstrem (Y = 4000) agar jauh di atas map & bebas void
+							-- [SISTEM DETEKSI]: Cari tau Hitbox mana yang sedang kita tempati saat ini sebelum kabur
+							local currentHitbox = nil
+							local shortestDistToMe = math.huge
+							for _, v in pairs(workspace:GetDescendants()) do
+								if v:IsA("BasePart") and v.Name == "Hitbox" then
+									local dist = (oldPos - v.Position).Magnitude
+									if dist < shortestDistToMe then
+										shortestDistToMe = dist
+										currentHitbox = v -- Mengunci target Hitbox saat ini
+									end
+								end
+							end
+							
+							-- Ke langit instan: X dan Z tetap sama, Y diubah ke 4000
 							humPart.CFrame = CFrame.new(oldPos.X, 4000, oldPos.Z)
-							task.wait(0.5) -- Jeda sangat singkat di langit untuk memastikan posisi aman
+							task.wait(0.4) -- Jeda sangat singkat di langit
 							
-							-- [PERBAIKAN]: Cari Hitbox terdekat lainnya yang BERBEDA dari posisi tadi
+							-- 4. Cari Hitbox alternatif yang paling dekat
 							local availableHitboxes = {}
 							for _, v in pairs(workspace:GetDescendants()) do
 								if v:IsA("BasePart") and v.Name == "Hitbox" then
-									-- Filter: Pastikan jarak Hitbox baru > 20 stud dari tempat Sheriff tadi agar tidak balik ke tempat yang sama
-									if (v.Position - oldPos).Magnitude > 20 then
+									
+									-- FILTER LOBBY: Abaikan jika Hitbox berada di radius X/Z 50 (Biar gak ganti tim)
+									if math.abs(v.Position.X) <= 50 and math.abs(v.Position.Z) <= 50 then
+										continue 
+									end
+									
+									-- FILTER UTAMA: Harus BUKAN Hitbox yang barusan kita tempati (currentHitbox)
+									if v ~= currentHitbox then
 										table.insert(availableHitboxes, v)
 									end
 								end
 							end
 							
-							-- Sortir untuk mencari yang paling dekat dari posisi lama kita (tapi versi aman/berbeda)
+							-- SORTIR JARAK: Cari yang PALING DEKAT dari posisi lama kita
 							table.sort(availableHitboxes, function(a, b)
-								return (oldPos - a.Position).Magnitude < (oldPos - b.Position).Magnitude
+								local distA = (oldPos - a.Position).Magnitude
+								local distB = (oldPos - b.Position).Magnitude
+								return distA < distB -- Mengutamakan jarak terkecil (paling dekat)
 							end)
 							
 							local targetHitbox = availableHitboxes[1]
 							
-							-- Teleport dari langit turun ke Hitbox baru yang aman
+							-- 5. Teleport Turun ke Hitbox Baru yang Paling Dekat
 							if targetHitbox and isOn and humPart then
 								humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
 								task.wait(0.3)
 							end
 							
-							_G.SheriffNear = false -- Membuka kembali gembok Auto Task untuk lanjut kerja
+							_G.SheriffNear = false -- Membuka gembok agar Auto Task bisa lanjut kerja di tempat baru
 						end
 					end
 				end)
@@ -582,7 +603,7 @@ elseif name == "Auto Task" then
 		_G.SheriffNear = false
 		_G.SheriffPart = nil
 	end
-		
+				
 		elseif name == "Inf Stamina" then
 			if isOn then
 				task.spawn(function()
