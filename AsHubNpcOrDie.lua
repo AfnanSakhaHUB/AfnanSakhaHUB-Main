@@ -510,7 +510,7 @@ elseif name == "Auto Run when Sherrif is near" then
 						local sheriffNear = false
 						local detectedSheriffPart = nil
 						
-						-- 2. Deteksi Keberadaan Sheriff
+						-- 2. Deteksi Keberadaan & Arah Pandang Sheriff
 						for _, p in pairs(game:GetService("Players"):GetPlayers()) do
 							if p ~= game:GetService("Players").LocalPlayer then
 								local isSheriff = false
@@ -524,10 +524,20 @@ elseif name == "Auto Run when Sherrif is near" then
 								if isSheriff and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
 									local sPart = p.Character.HumanoidRootPart
 									local dist = (humPart.Position - sPart.Position).Magnitude
+									
+									-- Jika Sheriff masuk dalam radius maxDistance
 									if dist <= maxDistance then
-										sheriffNear = true
-										detectedSheriffPart = sPart
-										break
+										-- [LOGIKA BARU]: Hitung arah hadap Sheriff menggunakan Dot Product
+										local sheriffLook = sPart.CFrame.LookVector -- Arah muka Sheriff
+										local directionToMe = (humPart.Position - sPart.Position).Unit -- Arah dari Sheriff ke Player
+										local dotProduct = sheriffLook:Dot(directionToMe) -- Kombinasi kedua arah
+										
+										-- dotProduct > 0.5 berarti Sheriff sedang melihat/menghadap ke arahmu (sudut cone sekitar 60 derajat)
+										if dotProduct > 0.5 then
+											sheriffNear = true
+											detectedSheriffPart = sPart
+											break
+										end
 									end
 								end
 							end
