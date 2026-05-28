@@ -11,6 +11,10 @@ local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+	char = newChar
+	humPart = newChar:WaitForChild("HumanoidRootPart", 10)
+end)
 
 ----------------------------------------------------
 -- SYSTEM CACHE KARAKTER UNIVERSAL (Anti Mati/Respawn)
