@@ -9,6 +9,9 @@ local HttpService = game:GetService("HttpService")
 local TeleportService = game:GetService("TeleportService")
 local Lighting = game:GetService("Lighting")
 
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
 ----------------------------------------------------
 -- SYSTEM CACHE KARAKTER UNIVERSAL (Anti Mati/Respawn)
 ----------------------------------------------------
