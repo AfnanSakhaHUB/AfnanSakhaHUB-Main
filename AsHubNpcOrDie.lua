@@ -407,6 +407,8 @@ elseif name == "Auto Task" then
 	if isOn then
 		task.spawn(function()
 			local visitedTasks = {}
+			local blacklistedHitboxes = {} -- Menyimpan 4 Hitbox terjauh ronde ini
+			local lastTeam = nil           -- Untuk mendeteksi perubahan tim
 			local vim = game:GetService("VirtualInputManager") -- Service untuk simulasi keyboard fisik
 			
 			while isOn do
@@ -417,76 +419,112 @@ elseif name == "Auto Task" then
 						return 
 					end
 
-					-- VALIDASI TIM: Hanya memproses jika pemain adalah "Criminals"
-					if LocalPlayer.Team and LocalPlayer.Team.Name == "Criminals" then
+					-- Ambil nama tim saat ini (Jika nil, anggap di Lobby)
+					local currentTeam = (LocalPlayer.Team and LocalPlayer.Team.Name) or "Lobby"
+
+					-- [SISTEM DETEKSI TRANSISI]: Berubah dari Lobby menjadi Criminals
+					if currentTeam == "Criminals" and lastTeam ~= "Criminals" then
+						if humPart then
+							blacklistedHitboxes = {} -- Reset blacklist ronde sebelumnya
+							local allHitboxes = {}
+							
+							-- Scan seluruh Hitbox yang ada di map saat baru spawn
+							for _, v in pairs(workspace:GetDescendants()) do
+								if v:IsA("BasePart") and v.Name == "Hitbox" then
+									table.insert(allHitboxes, v)
+								end
+							end
+							
+							-- Cari dan kunci 4 Hitbox paling jauh dari lokasi awal spawn kita
+							if #allHitboxes > 4 then
+								local spawnPos2D = Vector3.new(humPart.Position.X, 0, humPart.Position.Z)
+								
+								table.sort(allHitboxes, function(a, b)
+									local posA2D = Vector3.new(a.Position.X, 0, a.Position.Z)
+									local posB2D = Vector3.new(b.Position.X, 0, b.Position.Z)
+									return (spawnPos2D - posA2D).Magnitude < (spawnPos2D - posB2D).Magnitude
+								end)
+								
+								-- 4 Hitbox terjauh (berada di urutan paling belakang) dimasukkan ke Blacklist
+								for i = #allHitboxes, #allHitboxes - 3, -1 do
+									local farHitbox = allHitboxes[i]
+									if farHitbox then
+										blacklistedHitboxes[farHitbox] = true
+									end
+								end
+							end
+						end
+					end
+					
+					-- Catat tim saat ini untuk deteksi di loop berikutnya
+					lastTeam = currentTeam
+
+					-- EXECUTE TASK: Hanya berjalan jika berstatus "Criminals"
+					if currentTeam == "Criminals" then
 						if humPart and char then
 							local targetHitbox = nil
 							local availableTasks = {}
 
-							-- 1. Scan semua Hitbox di workspace yang belum dikunjungi
+							-- 1. Scan Hitbox yang belum dikunjungi DAN tidak ada di daftar Blacklist Terjauh
 							for _, v in pairs(workspace:GetDescendants()) do
 								if v:IsA("BasePart") and v.Name == "Hitbox" then
-									if not visitedTasks[v] then
+									if not visitedTasks[v] and not blacklistedHitboxes[v] then
 										table.insert(availableTasks, v)
 									end
 								end
 							end
 							
-							-- 2. Reset memori jika semua Hitbox sudah selesai dikunjungi
+							-- 2. Reset memori kunjungan jika semua Hitbox aman sudah habis
 							if #availableTasks == 0 then
 								visitedTasks = {}
 								for _, v in pairs(workspace:GetDescendants()) do
 									if v:IsA("BasePart") and v.Name == "Hitbox" then
-										table.insert(availableTasks, v)
+										if not blacklistedHitboxes[v] then
+											table.insert(availableTasks, v)
+										end
 									end
 								end
 							end
 
-							-- 3. Urutkan Hitbox berdasarkan jarak TERDEKAT dari Player (Index 1 = Terdekat, Index terakhir = Terjauh)
+							-- 3. Urutkan sisa Hitbox yang aman berdasarkan yang PALING DEKAT dari posisi player sekarang
 							if #availableTasks > 0 then
+								local playerPos2D = Vector3.new(humPart.Position.X, 0, humPart.Position.Z)
+
 								table.sort(availableTasks, function(a, b)
-									local distA = (humPart.Position - a.Position).Magnitude
-									local distB = (humPart.Position - b.Position).Magnitude
-									return distA < distB -- Terdekat ditaruh di paling atas
+									local posA2D = Vector3.new(a.Position.X, 0, a.Position.Z)
+									local posB2D = Vector3.new(b.Position.X, 0, b.Position.Z)
+									return (playerPos2D - posA2D).Magnitude < (playerPos2D - posB2D).Magnitude
 								end)
 								
-								-- 4. BUANG 4 HITBOX TERJAUH (Hanya dieksekusi saat berstatus Criminals & jumlah hitbox mencukupi)
-								if #availableTasks > 4 then
-									for i = 1, 4 do
-										table.remove(availableTasks, #availableTasks) -- Menghapus list dari urutan paling belakang (terjauh)
-									end
-								end
-								
-								-- Target otomatis memilih yang paling dekat (urutan nomor 1) setelah disaring
 								targetHitbox = availableTasks[1]
 							end
 							
-							-- 5. Eksekusi Teleport dan Tekan E Murni
+							-- 4. Eksekusi Teleport dan Tekan E Murni
 							if targetHitbox then
 								visitedTasks[targetHitbox] = true
 								humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
-								task.wait(0.3) -- Jeda setelah teleport agar posisi stabil
+								task.wait(0.3) -- Jeda stabilisasi posisi
 								
 								-- Cek ulang kondisi sebelum menekan E
 								if isOn and not _G.SheriffNear and (LocalPlayer.Team and LocalPlayer.Team.Name == "Criminals") then
 									vim:SendKeyEvent(true, Enum.KeyCode.E, false, game) -- Tahan E
 									
 									local timeElapsed = 0
-									-- Loop menahan selama 5.5 detik (Bisa batal instan jika Sheriff datang atau tim berubah)
 									while timeElapsed < 5.5 and isOn and not _G.SheriffNear and (LocalPlayer.Team and LocalPlayer.Team.Name == "Criminals") do
 										task.wait(0.1)
 										timeElapsed = timeElapsed + 0.1
 									end
 									
 									vim:SendKeyEvent(false, Enum.KeyCode.E, false, game) -- Lepas E
-									task.wait(0.2) -- Jeda singkat sebelum lanjut ke task terdekat berikutnya
+									task.wait(0.2) 
 								else
 									task.wait(0.5) 
 								end
 							end
 						end
 					else
-						-- Jika bukan tim Criminals (misal di Lobby), script akan diam/menunggu
+						-- Jika kembali ke Lobby atau Mati, bersihkan blacklist agar siap untuk ronde depan
+						blacklistedHitboxes = {}
 						task.wait(1)
 					end
 				end)
