@@ -1,3 +1,198 @@
+// UNIVERSAL AFNANSAKHA HUB (FULLY UNIVERSAL PROXIMITY/TASK AUTO-FARM)
+--// Tempatkan di: StarterGui -> LocalScript atau langsung jalankan via Executor Anda
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Lighting = game:GetService("Lighting")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+----------------------------------------------------
+-- SYSTEM CACHE KARAKTER UNIVERSAL (Anti Mati/Respawn)
+----------------------------------------------------
+local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local humPart = char:WaitForChild("HumanoidRootPart", 5)
+
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+	char = newChar
+	humPart = newChar:WaitForChild("HumanoidRootPart", 5)
+	local hum = newChar:WaitForChild("Humanoid", 5)
+	if hum then
+		hum.UseJumpPower = true
+	end
+end)
+
+----------------------------------------------------
+-- AUTO CLEANUP UI LAMA
+----------------------------------------------------
+local oldUI1 = PlayerGui:FindFirstChild("AfnanSakhaLoadingScreen")
+if oldUI1 then oldUI1:Destroy() end
+
+local oldUI2 = PlayerGui:FindFirstChild("AfnanSakhaHubUI")
+if oldUI2 then oldUI2:Destroy() end
+
+----------------------------------------------------
+-- LOADING SCREEN
+----------------------------------------------------
+local LoadingGui = Instance.new("ScreenGui")
+LoadingGui.Name = "AfnanSakhaLoadingScreen"
+LoadingGui.ResetOnSpawn = false
+LoadingGui.IgnoreGuiInset = true
+LoadingGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+LoadingGui.Parent = PlayerGui
+
+local Background = Instance.new("Frame")
+Background.Size = UDim2.new(1,0,1,0)
+Background.BackgroundColor3 = Color3.fromRGB(10,15,30)
+Background.BorderSizePixel = 0
+Background.Parent = LoadingGui
+
+local MainContainer = Instance.new("Frame")
+MainContainer.Size = UDim2.new(0,500,0,150)
+MainContainer.Position = UDim2.new(0.5,-250,0.5,-75)
+MainContainer.BackgroundTransparency = 1
+MainContainer.Parent = Background
+
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1,0,0,30)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "Loading [AfnanSakha HUB - Npc Or Die]"
+TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
+TitleLabel.TextSize = 24
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = MainContainer
+
+local BarBackground = Instance.new("Frame")
+BarBackground.Size = UDim2.new(1,0,0,40)
+BarBackground.Position = UDim2.new(0,0,0,45)
+BarBackground.BackgroundColor3 = Color3.fromRGB(20,30,50)
+BarBackground.BorderSizePixel = 0
+BarBackground.Parent = MainContainer
+
+Instance.new("UICorner", BarBackground).CornerRadius = UDim.new(0.5,0)
+
+local BarFill = Instance.new("Frame")
+BarFill.Size = UDim2.new(0,0,1,0)
+BarFill.BackgroundColor3 = Color3.fromRGB(0,180,255)
+BarFill.BorderSizePixel = 0
+BarFill.Parent = BarBackground
+
+Instance.new("UICorner", BarFill).CornerRadius = UDim.new(0.5,0)
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1,0,0,30)
+StatusLabel.Position = UDim2.new(0,0,0,95)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Menginisialisasi engine..."
+StatusLabel.TextColor3 = Color3.fromRGB(200,220,255)
+StatusLabel.TextSize = 22
+StatusLabel.Font = Enum.Font.GothamMedium
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.Parent = MainContainer
+
+task.wait(0.2)
+for i = 1, 100 do
+	local progress = i / 100
+	TweenService:Create(BarFill, TweenInfo.new(0.05, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(progress,0,1,0)}):Play()
+	StatusLabel.Text = "Creating Npc Or Die Script: " .. i .. "%"
+	task.wait(0.005)
+end
+LoadingGui:Destroy()
+
+----------------------------------------------------
+-- MAIN HUB INTERFACE
+----------------------------------------------------
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AfnanSakhaHubUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.IgnoreGuiInset = true
+ScreenGui.Parent = PlayerGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Size = UDim2.new(0,550,0,400)
+MainFrame.Position = UDim2.new(0.5,-275,0.5,-200)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12,22,37)
+MainFrame.BackgroundTransparency = 0.15
+MainFrame.Parent = ScreenGui
+
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,12)
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = Color3.fromRGB(0,180,255)
+MainStroke.Thickness = 2
+MainStroke.Parent = MainFrame
+
+local ExecTitle = Instance.new("TextLabel")
+ExecTitle.Size = UDim2.new(1,-50,0,40)
+ExecTitle.Position = UDim2.new(0,15,0,5)
+ExecTitle.BackgroundTransparency = 1
+ExecTitle.Text = "AFNANSAKHA HUB v2 (Npc Or Die)"
+ExecTitle.TextColor3 = Color3.fromRGB(0,230,255)
+ExecTitle.TextSize = 22
+ExecTitle.Font = Enum.Font.GothamBold
+ExecTitle.TextXAlignment = Enum.TextXAlignment.Left
+ExecTitle.Parent = MainFrame
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0,30,0,30)
+CloseBtn.Position = UDim2.new(1,-40,0,8)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(20,40,65)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(0,180,255)
+CloseBtn.TextSize = 16
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Parent = MainFrame
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0,6)
+
+local ScrollList = Instance.new("ScrollingFrame")
+ScrollList.Size = UDim2.new(1,-30,0,265)
+ScrollList.Position = UDim2.new(0,15,0,60)
+ScrollList.BackgroundTransparency = 1
+ScrollList.CanvasSize = UDim2.new(0,0,0,950)
+ScrollList.ScrollBarThickness = 4
+ScrollList.ScrollBarImageColor3 = Color3.fromRGB(0,180,255)
+ScrollList.Parent = MainFrame
+
+local Layout = Instance.new("UIListLayout")
+Layout.Padding = UDim.new(0,8)
+Layout.Parent = ScrollList
+
+----------------------------------------------------
+-- UNIVERSAL SERVER HOP UTILITY FUNCTION
+----------------------------------------------------
+local function serverHop()
+	local servers = {}
+	local reqFunc = syn and syn.request or http and http.request or request or http_request
+	if reqFunc then
+		local req = reqFunc({
+			Url = "https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Desc&limit=100&excludeFullGames=true",
+			Method = "GET"
+		})
+		if req.StatusCode == 200 then
+			local body = HttpService:JSONDecode(req.Body)
+			if body and body.data then
+				for _, server in ipairs(body.data) do
+					if server.playing < server.maxPlayers and server.id ~= game.JobId then
+						table.insert(servers, server.id)
+					end
+				end
+			end
+		end
+	end
+	if #servers > 0 then
+		TeleportService:TeleportToPlaceInstance(game.PlaceId, servers[math.random(1, #servers)], LocalPlayer)
+	end
+end
+
+----------------------------------------------------
+-- LOGIC ROW TOGGLE & ACTION BUTTON
 ----------------------------------------------------
 local function CreateScriptRow(name, defaultState)
 	local Row = Instance.new("Frame")
