@@ -910,7 +910,6 @@ local function CreateScriptButton(name, callback)
 
 	ActionBtn.MouseButton1Click:Connect(callback)
 end
-
 ----------------------------------------------------
 -- REGISTRASI FITUR MENU
 ----------------------------------------------------
@@ -1094,7 +1093,7 @@ local function MakeDraggable(uiElement)
 end
 
 -- Mengaktifkan fungsi geser ke Main Menu dan Bundaran "AS"
-MakeDraggable(MainFrame)
+MakeDraggable(MainFrame) 
 MakeDraggable(RoundToggleBtn)
 
 -- Efek Animasi Muncul
