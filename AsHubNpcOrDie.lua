@@ -876,6 +876,70 @@ elseif name == "Inf Stamina" then
 	end)
 end
 
+elseif name == "Auto Revive" then
+			if isOn then
+				if _G.DeathConnection then _G.DeathConnection:Disconnect() _G.DeathConnection = nil end
+				if _G.CharAddedConnection then _G.CharAddedConnection:Disconnect() _G.CharAddedConnection = nil end
+
+				local function listenToDeath(currentChar)
+					local humanoid = currentChar:WaitForChild("Humanoid", 5)
+					local rootPart = currentChar:WaitForChild("HumanoidRootPart", 5)
+					
+					if humanoid and rootPart then
+						_G.DeathConnection = humanoid.Died:Connect(function()
+							local currentTeam = LocalPlayer.Team and LocalPlayer.Team.Name
+							
+							if currentTeam == "Criminals" or currentTeam == "Sheriffs" then
+								local deathPos = rootPart.Position
+								
+								-- Buat Raycast untuk menembak ke bawah map sedalam 150 studs
+								local raycastParams = RaycastParams.new()
+								raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+								raycastParams.FilterDescendantsInstances = {currentChar}
+								
+								local raycastResult = workspace:Raycast(deathPos, Vector3.new(0, -150, 0), raycastParams)
+								
+								-- VALIDASI: Hanya hidup kembali jika ada lantai yang terlihat (Transparency < 1) dan padat (CanCollide)
+								if raycastResult and raycastResult.Instance then
+									local hitPart = raycastResult.Instance
+									
+									if hitPart.Transparency < 1 and hitPart.CanCollide then
+										task.spawn(function()
+											-- Menunggu respawn karakter baru
+											local newChar = LocalPlayer.CharacterAdded:Wait()
+											local newRoot = newChar:WaitForChild("HumanoidRootPart", 10)
+											task.wait(0.6) -- Jeda agar map/karakter termuat sempurna
+											
+											if newRoot and isOn then
+												-- Teleportasi kembali ke posisi koordinat kematian (+3 studs ke atas)
+												newRoot.CFrame = CFrame.new(deathPos + Vector3.new(0, 3, 0))
+												
+												-- Kembalikan Status Tim Asal (Criminals / Sheriffs)
+												pcall(function()
+													local targetTeam = game.Teams:FindFirstChild(currentTeam)
+													if targetTeam then
+														LocalPlayer.Team = targetTeam
+													end
+												end)
+											end
+										end)
+									end
+								end
+							end
+						end)
+					end
+				end
+
+				if LocalPlayer.Character then listenToDeath(LocalPlayer.Character) end
+				_G.CharAddedConnection = LocalPlayer.CharacterAdded:Connect(listenToDeath)
+			else
+				if _G.DeathConnection then _G.DeathConnection:Disconnect() _G.DeathConnection = nil end
+				if _G.CharAddedConnection then _G.CharAddedConnection:Disconnect() _G.CharAddedConnection = nil end
+			end
+		end
+	end)
+end
+
 local function CreateScriptButton(name, callback)
 	local Row = Instance.new("Frame")
 	Row.Size = UDim2.new(1,-10,0,45)
@@ -926,6 +990,7 @@ CreateScriptRow("Auto Task", false)
 CreateScriptRow("Auto Run when Sherrif is near", false)
 CreateScriptRow("Inf Stamina", false)
 CreateScriptRow("Noclip", false)
+CreateScriptRow("Auto Revive", false)
 
 CreateScriptButton("Kill Nearest NPCs", function()
 	for i, v in ipairs(Players:GetPlayers()) do
