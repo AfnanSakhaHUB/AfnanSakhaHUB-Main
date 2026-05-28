@@ -687,7 +687,7 @@ elseif name == "Auto Run when Sherrif is near" then
 		
 		-- Mengatur Ukuran dan Posisi tepat di atas tombol lari asli (sebelah kiri tombol lompat)
 		overlayButton.Size = UDim2.new(0, 65, 0, 65) 
-		overlayButton.Position = UDim2.new(1, -142, 1, -47) 
+		overlayButton.Position = UDim2.new(1, -144, 1, -47) 
 		overlayButton.AnchorPoint = Vector2.new(0.5, 0.5)
 		
 		-- PENGATURAN AWAL: Tombol 100% Tidak Terlihat (Transparansi = 1)
