@@ -876,6 +876,88 @@ elseif name == "Inf Stamina" then
 	end)
 end
 
+elseif name == "Immortality" then
+	if isOn then
+		-- Bersihkan koneksi lama agar tidak menumpuk/lag
+		if _G.DeathConnection then _G.DeathConnection:Disconnect() _G.DeathConnection = nil end
+		if _G.CharAddedConnection then _G.CharAddedConnection:Disconnect() _G.CharAddedConnection = nil end
+
+		-- Fungsi utama mendeteksi kematian dan mengecek kelayakan tempat mati
+		local function listenToDeath(char)
+			local humanoid = char:WaitForChild("Humanoid", 5)
+			local rootPart = char:WaitForChild("HumanoidRootPart", 5)
+			
+			if humanoid and rootPart then
+				_G.DeathConnection = humanoid.Died:Connect(function()
+					-- 1. Ambil tim saat ini tepat sebelum sistem game memindahkan ke Lobby
+					local currentTeam = LocalPlayer.Team and LocalPlayer.Team.Name
+					
+					if currentTeam == "Criminals" or currentTeam == "Sheriffs" then
+						local deathPos = rootPart.Position
+						
+						-- 2. Setup Raycast untuk mengecek lantai di bawah titik mati
+						local raycastParams = RaycastParams.new()
+						raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+						raycastParams.FilterDescendantsInstances = {char} -- Abaikan karakter sendiri
+						
+						-- Tembak garis lurus ke bawah sejauh 150 studs
+						local raycastResult = workspace:Raycast(deathPos, Vector3.new(0, -150, 0), raycastParams)
+						
+						if raycastResult and raycastResult.Instance then
+							local hitPart = raycastResult.Instance
+							
+							-- 3. VALIDASI: Hanya bekerja jika lantai terlihat (tidak transparan 100%) dan memiliki collide
+							if hitPart.Transparency < 1 and hitPart.CanCollide then
+								
+								-- Jalankan thread terpisah untuk menunggu proses respawn
+								task.spawn(function()
+									-- Tunggu karakter baru muncul di lobby bawaan game
+									local newChar = LocalPlayer.CharacterAdded:Wait()
+									local newRoot = newChar:WaitForChild("HumanoidRootPart", 10)
+									task.wait(0.6) -- Jeda tipis agar karakter siap/load sempurna
+									
+									if newRoot then
+										-- 4. Teleport kembali ke posisi mati (diberi jarak +3 studs ke atas agar tidak amblas)
+										newRoot.CFrame = CFrame.new(deathPos + Vector3.new(0, 3, 0))
+										
+										-- 5. Kembalikan Tim Pemain ke tim semula (Criminals / Sheriffs)
+										pcall(function()
+											local targetTeam = game.Teams:FindFirstChild(currentTeam)
+											if targetTeam then
+												LocalPlayer.Team = targetTeam
+												
+												-- [[ CATATAN PENTING ]]
+												-- Jika tim tidak berubah secara server-side (hanya berubah di layar Anda),
+												-- Anda harus mengganti baris "LocalPlayer.Team = targetTeam" di atas dengan 
+												-- RemoteEvent bawaan game ini untuk join tim. Contohnya biasanya seperti:
+												-- game.ReplicatedStorage.JoinTeamRemote:FireServer(currentTeam)
+											end
+										end)
+									end
+								end)
+								
+							end
+						end
+					end
+				end)
+			end
+		end
+
+		-- Jalankan fungsi jika karakter sudah hidup di dalam game
+		if LocalPlayer.Character then
+			listenToDeath(LocalPlayer.Character)
+		end
+
+		-- Jalankan otomatis setiap kali karakter respawn di round selanjutnya
+		_G.CharAddedConnection = LocalPlayer.CharacterAdded:Connect(listenToDeath)
+
+	else
+		-- JIKA FITUR DIMATIKAN
+		if _G.DeathConnection then _G.DeathConnection:Disconnect() _G.DeathConnection = nil end
+		if _G.CharAddedConnection then _G.CharAddedConnection:Disconnect() _G.CharAddedConnection = nil end
+end
+
+
 local function CreateScriptButton(name, callback)
 	local Row = Instance.new("Frame")
 	Row.Size = UDim2.new(1,-10,0,45)
@@ -926,6 +1008,7 @@ CreateScriptRow("Auto Task", false)
 CreateScriptRow("Auto Run when Sherrif is near", false)
 CreateScriptRow("Inf Stamina", false)
 CreateScriptRow("Noclip", false)
+CreateScriptRow("Immortality", false)
 
 CreateScriptButton("Kill Nearest NPCs", function()
 	for i, v in ipairs(Players:GetPlayers()) do
