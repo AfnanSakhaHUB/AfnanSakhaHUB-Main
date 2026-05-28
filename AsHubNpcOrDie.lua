@@ -285,15 +285,31 @@ local function CreateScriptRow(name, defaultState)
 				task.spawn(function()
 					local vim = game:GetService("VirtualInputManager")
 					local lPlayer = game:GetService("Players").LocalPlayer
+					local camera = workspace.CurrentCamera
+					
+					-- 1. MEMBUAT BUNDARAN 2D (FOV CIRCLE) DI KACA LAYAR
+					local fovCircle = Drawing.new("Circle")
+					fovCircle.Color = Color3.fromRGB(255, 0, 0) -- Warna Merah
+					fovCircle.Thickness = 2                     -- Ketebalan garis lingkaran
+					fovCircle.Radius = 150                      -- Ukuran lingkaran di layar (bisa kamu ubah sesukamu)
+					fovCircle.Visible = true
+					fovCircle.Filled = false
 					
 					while isOn do
 						pcall(function()
-							-- 1. VALIDASI TIM: Pastikan kamu ada di tim Sheriffs
+							-- Selalu update posisi lingkaran agar pas di tengah-tengah layar kamu
+							local screenSize = camera.ViewportSize
+							local screenCenter = Vector2.new(screenSize.X / 2, screenSize.Y / 2)
+							fovCircle.Position = screenCenter
+
+							-- Validasi Tim Sheriff (Sembunyikan lingkaran jika bukan Sheriff)
 							if not (lPlayer.Team and lPlayer.Team.Name == "Sheriffs") then
+								fovCircle.Visible = false
 								return
+							else
+								fovCircle.Visible = true
 							end
 
-							-- FIX UTAMA: Selalu ambil karakter dan HumPart yang paling BARU (Anti-Bug saat Respawn)
 							local currentChar = lPlayer.Character
 							local currentRoot = currentChar and currentChar:FindFirstChild("HumanoidRootPart")
 							local currentHum = currentChar and currentChar:FindFirstChildOfClass("Humanoid")
@@ -302,7 +318,7 @@ local function CreateScriptRow(name, defaultState)
 								local closestCriminal = nil
 								local shortestDistance = math.huge
 
-								-- 2. CARI CRIMINAL TERDEKAT YANG MASIH HIDUP
+								-- 2. CARI CRIMINAL TERDEKAT UNTUK DIKEJAR SECARA FISIK
 								for _, p in pairs(game:GetService("Players"):GetPlayers()) do
 									if p ~= lPlayer and p.Team and p.Team.Name == "Criminals" then
 										local enemyChar = p.Character
@@ -318,30 +334,40 @@ local function CreateScriptRow(name, defaultState)
 									end
 								end
 
-								-- 3. EKSEKUSI TELEPORT + LOCK CAMERA + AUTO CLICK
+								-- 3. JALAN KE TARGET & DETEKSI APAKAH MASUK BUNDARAN AIMBOT
 								if closestCriminal then
 									local targetPart = closestCriminal.HumanoidRootPart
 									
-									-- Hitung posisi tepat 3 studs di belakang punggung musuh
-									local behindPosition = targetPart.CFrame * Vector3.new(0, 0, 3)
-									
-									-- FIX TELEPORT & CAMERA: Teleport sekaligus paksa badan kita menghadap musuh
-									-- Ini otomatis memaksa kamera mengikuti arah hadap karakter baru kita
-									currentRoot.CFrame = CFrame.lookAt(behindPosition.Position, targetPart.Position)
-									
-									-- Paksa Kunci Kamera Utama (Kekeran Tambahan)
-									local camera = workspace.CurrentCamera
-									camera.CFrame = CFrame.lookAt(camera.CFrame.Position, targetPart.Position)
+									-- Karakter kamu otomatis jalan kaki ngejar musuh (Anti-Rubberband)
+									currentHum:MoveTo(targetPart.Position)
 
-									-- Eksekusi Klik Kiri Mouse (Hit/Tembak)
-									vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)
-									task.wait(0.01)
-									vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+									-- Konversi posisi koordinat 3D musuh menjadi koordinat 2D di layar monitor kamu
+									local screenPos, onScreen = camera:WorldToViewportPoint(targetPart.Position)
+
+									if onScreen then
+										-- Hitung jarak dari titik tengah lingkaran layar ke posisi tubuh musuh di layar
+										local enemyScreenPos = Vector2.new(screenPos.X, screenPos.Y)
+										local distanceToCenter = (enemyScreenPos - screenCenter).Magnitude
+
+										-- JIKA MUSUH COCOK & MASUK KE DALAM BUNDARAN MERAH DI LAYAR
+										if distanceToCenter <= fovCircle.Radius then
+											-- AIMBOT: Detik itu juga kamera dipaksa ngunci (lock) ke musuh
+											camera.CFrame = CFrame.lookAt(camera.CFrame.Position, targetPart.Position)
+
+											-- AUTO CLICK: Klik kiri mouse super cepat buat nembak/tangkap
+											vim:SendMouseButtonEvent(0, 0, 0, true, game, 1)
+											task.wait(0.01)
+											vim:SendMouseButtonEvent(0, 0, 0, false, game, 1)
+										end
+									end
 								end
 							end
 						end)
-						task.wait(0.05) -- Jeda loop (0.05 detik = nempel ketat tanpa delay)
+						task.wait(0.01) -- Loop 0.01 detik agar pergerakan lingkaran di layar super mulus (Smooth 60+ FPS)
 					end
+					
+					-- Hapus bundaran merah dari layar saat fitur di-OFF kan dari UI
+					pcall(function() fovCircle:Remove() end)
 				end)
 			end
 
