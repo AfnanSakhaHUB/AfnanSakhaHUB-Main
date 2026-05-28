@@ -401,124 +401,62 @@ local function CreateScriptRow(name, defaultState)
 								end
 							end)
 						end
+								
+        elseif name == "Auto Task" then
+			if isOn then
+				task.spawn(function()
+					local visitedTasks = {}
+					while isOn do
+						pcall(function()
+							if humPart and char then
+								local targetHitbox = nil
+								local availableTasks = {}
 
-elseif name == "Auto Task" then
-	if isOn then
-		task.spawn(function()
-			local visitedTasks = {}
-			while isOn do
-				pcall(function()
-					-- JIKA SHERIFF DEKAT: Berhenti dan tunggu sampai aman
-					if _G.SheriffNear then 
-						task.wait(0.5) 
-						return 
-					end
-
-					local char = LocalPlayer.Character
-					local humPart = char and char:FindFirstChild("HumanoidRootPart")
-
-					if humPart and char then
-						local targetHitbox = nil
-						local priorityTasks = {} -- Keranjang Kuning / Berwarna (Prioritas 1)
-						local normalTasks = {}   -- Keranjang Putih / Abu-abu (Prioritas 2)
-
-						for _, v in pairs(workspace:GetDescendants()) do
-							if v:IsA("BasePart") and v.Name == "Hitbox" then
-								if not visitedTasks[v] then
-									-- Pastikan ProximityPrompt-nya aktif/bisa diinteraksi
-									local prompt = v:FindFirstChildOfClass("ProximityPrompt") 
-										or v.Parent:FindFirstChildOfClass("ProximityPrompt")
-										or v.Parent:FindFirstChild("ProximityPrompt", true)
-
-									if prompt and prompt.Enabled then
-										local c = v.Color
-										local hasVisualEffect = false
-
-										-- Cek apakah objek dibungkus Highlight outline/SelectionBox
-										local highlight = v:FindFirstChildOfClass("Highlight") 
-											or v.Parent:FindFirstChildOfClass("Highlight")
-											or (v.Parent.Parent and v.Parent.Parent:FindFirstChildOfClass("Highlight"))
-										local selection = v:FindFirstChildOfClass("SelectionBox") 
-											or v.Parent:FindFirstChildOfClass("SelectionBox")
-
-										if highlight then
-											c = (highlight.FillTransparency < 1 and highlight.FillColor) or highlight.OutlineColor
-											hasVisualEffect = true
-										elseif selection then
-											c = selection.Color3
-											hasVisualEffect = true
-										end
-
-										-- RUMUS MATEMATIKA WARNA: Cek keseimbangan RGB
-										local diffRG = math.abs(c.R - c.G)
-										local diffGB = math.abs(c.G - c.B)
-										local isMonochrome = (diffRG < 0.1 and diffGB < 0.1) -- True jika Putih/Abu/Hitam
-
-										-- Cek apakah objek gak punya warna (Transparan & gak ada efek)
-										local noColor = (v.Transparency >= 1 and not hasVisualEffect)
-
-										if not noColor then
-											if isMonochrome and c.R > 0.5 then
-												-- Masuk keranjang PUTIH (Hanya dipake kalau kuning abis)
-												table.insert(normalTasks, v)
-											elseif not isMonochrome then
-												-- Masuk keranjang KUNING / WARNA TUGAS (Target Utama)
-												table.insert(priorityTasks, v)
-											end
+								for _, v in pairs(workspace:GetDescendants()) do
+									if v:IsA("BasePart") and v.Name == "Hitbox" then
+										if not visitedTasks[v] then
+											table.insert(availableTasks, v)
 										end
 									end
 								end
-							end
-						end
-
-						-- SCAN REFRESH: Jika semua target sudah habis dikunjungi, reset memory-nya
-						if #priorityTasks == 0 and #normalTasks == 0 then
-							visitedTasks = {}
-							for _, v in pairs(workspace:GetDescendants()) do
-								if v:IsA("BasePart") and v.Name == "Hitbox" then
-									-- Isi ulang antrean di loop berikutnya
-								end
-							end
-						end
-
-						-- PENENTUAN TELEPORT: Dahulukan yang berwarna, putih jadi cadangan
-						if #priorityTasks > 0 then
-							targetHitbox = priorityTasks[1]
-						elseif #normalTasks > 0 then
-							targetHitbox = normalTasks[1]
-						end
-						
-						-- Eksekusi Gerakan dan Mengisi Task
-						if targetHitbox then
-							visitedTasks[targetHitbox] = true
-							humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
-							task.wait(0.3)
-							
-							local prompt = targetHitbox:FindFirstChildOfClass("ProximityPrompt") 
-								or targetHitbox.Parent:FindFirstChildOfClass("ProximityPrompt")
-								or targetHitbox.Parent:FindFirstChild("ProximityPrompt", true)
-							
-							if prompt and isOn and not _G.SheriffNear then
-								prompt.HoldDuration = 0
-								prompt:InputHoldBegin()
 								
-								local timeElapsed = 0
-								while timeElapsed < 5.5 and isOn and not _G.SheriffNear do
-									task.wait(0.1)
-									timeElapsed = timeElapsed + 0.1
+								if #availableTasks == 0 then
+									visitedTasks = {}
+									for _, v in pairs(workspace:GetDescendants()) do
+										if v:IsA("BasePart") and v.Name == "Hitbox" then
+											table.insert(availableTasks, v)
+										end
+									end
+								end
+
+								if #availableTasks > 0 then
+									targetHitbox = availableTasks[1]
 								end
 								
-								prompt:InputHoldEnd()
-							else
-								task.wait(0.5)
+								if targetHitbox then
+									visitedTasks[targetHitbox] = true
+									humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
+									task.wait(0.3)
+									
+									local prompt = targetHitbox:FindFirstChildOfClass("ProximityPrompt") 
+										or targetHitbox.Parent:FindFirstChildOfClass("ProximityPrompt")
+										or targetHitbox.Parent:FindFirstChild("ProximityPrompt", true)
+									
+									if prompt and isOn then
+										prompt.HoldDuration = 0
+										prompt:InputHoldBegin() 
+										task.wait(5)           -- << Sudah diubah jadi 5 detik
+										prompt:InputHoldEnd()   
+									else
+										task.wait(1) 
+									end
+								end
 							end
-						end
+						end)
+						task.wait(0.5)
 					end
 				end)
-				task.wait(0.5)
 			end
-		end)
-	end
 								
 		elseif name == "Auto Run when Sherrif is near" then
 			if isOn then
