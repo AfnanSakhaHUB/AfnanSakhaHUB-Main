@@ -399,8 +399,8 @@ local function CreateScriptRow(name, defaultState)
 									-- Jeda aman 5 detik agar script tidak spam TP saat game sedang memproses perpindahan tim kamu
 									task.wait(5)
 								end
-							end)
-						end
+							end
+						end)
 								
         elseif name == "Auto Task" then
 			if isOn then
