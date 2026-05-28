@@ -1,29 +1,423 @@
---// UNIVERSAL AFNANSAKHA HUB (FULLY UNIVERSAL PROXIMITY/TASK AUTO-FARM)
---// Tempatkan di: StarterGui -> LocalScript atau langsung jalankan via Executor Anda
-
-local Players = game:GetService("Players")
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
-local TeleportService = game:GetService("TeleportService")
-local Lighting = game:GetService("Lighting")
-
-local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
-
 ----------------------------------------------------
--- SYSTEM CACHE KARAKTER UNIVERSAL (Anti Mati/Respawn)
-----------------------------------------------------
-local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local humPart = char:WaitForChild("HumanoidRootPart", 5)
+local function CreateScriptRow(name, defaultState)
+	local Row = Instance.new("Frame")
+	Row.Size = UDim2.new(1,-10,0,45)
+	Row.BackgroundColor3 = Color3.fromRGB(18,32,55)
+	Row.Parent = ScrollList
+	Instance.new("UICorner", Row).CornerRadius = UDim.new(0,8)
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Color = Color3.fromRGB(0,100,180)
+	Stroke.Parent = Row
 
-LocalPlayer.CharacterAdded:Connect(function(newChar)
-	char = newChar
-	humPart = newChar:WaitForChild("HumanoidRootPart", 5)
-	local hum = newChar:WaitForChild("Humanoid", 5)
-	if hum then
-		hum.UseJumpPower = true
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(0.7,0,1,0)
+	Label.Position = UDim2.new(0,15,0,0)
+	Label.BackgroundTransparency = 1
+	Label.Text = name .. (defaultState and " (ON)" or " (OFF)")
+	Label.TextColor3 = Color3.fromRGB(240,245,255)
+	Label.TextSize = 15
+	Label.Font = Enum.Font.GothamMedium
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = Row
+
+	local ToggleBtn = Instance.new("TextButton")
+	ToggleBtn.Size = UDim2.new(0,55,0,26)
+	ToggleBtn.Position = UDim2.new(1,-70,0.5,-13)
+	ToggleBtn.BackgroundColor3 = defaultState and Color3.fromRGB(0,180,255) or Color3.fromRGB(35,50,75)
+	ToggleBtn.Text = ""
+	ToggleBtn.Parent = Row
+	Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0.5,0)
+
+	local Circle = Instance.new("Frame")
+	Circle.Size = UDim2.new(0,20,0,20)
+	Circle.Position = defaultState and UDim2.new(1,-23,0.5,-10) or UDim2.new(0,3,0.5,-10)
+	Circle.BackgroundColor3 = Color3.fromRGB(255,255,255)
+	Circle.Parent = ToggleBtn
+	Instance.new("UICorner", Circle).CornerRadius = UDim.new(0.5,0)
+
+	local isOn = defaultState
+
+	ToggleBtn.MouseButton1Click:Connect(function()
+		isOn = not isOn
+		Label.Text = name .. (isOn and " (ON)" or " (OFF)")
+		TweenService:Create(Circle, TweenInfo.new(0.2), {Position = isOn and UDim2.new(1,-23,0.5,-10) or UDim2.new(0,3,0.5,-10)}):Play()
+		TweenService:Create(ToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = isOn and Color3.fromRGB(0,180,255) or Color3.fromRGB(35,50,75)}):Play()
+
+		if name == "Super Speed" then
+			if isOn then
+				task.spawn(function()
+					while isOn do if char and char:FindFirstChild("Humanoid") then char.Humanoid.WalkSpeed = 100 end task.wait() end
+				end)
+			else
+				if char and char:FindFirstChild("Humanoid") then char.Humanoid.WalkSpeed = 16 end
+			end
+
+		elseif name == "Infinite Jump" then
+			if isOn then
+				task.spawn(function()
+					while isOn do if char and char:FindFirstChild("Humanoid") then char.Humanoid.UseJumpPower = true char.Humanoid.JumpPower = 100 end task.wait() end
+				end)
+			else
+				if char and char:FindFirstChild("Humanoid") then char.Humanoid.JumpPower = 50 end
+			end
+
+		elseif name == "Cash Farm" then
+			if isOn then
+				task.spawn(function()
+					while isOn do
+						pcall(function()
+							local collect = workspace:FindFirstChild("CollectableItems")
+							if collect and humPart then
+								for _, p in ipairs(collect:GetChildren()) do
+									if not isOn then break end
+									if not p:GetAttribute("CannotSee") and p:IsA("BasePart") then
+										humPart.CFrame = p.CFrame
+										task.wait(0.5)
+										local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+										if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
+									end
+									task.wait(1)
+								end
+							end
+						end)
+						task.wait(0.5)
+					end
+				end)
+			end
+
+		elseif name == "Reset if Bag Full" then
+			if isOn then
+				task.spawn(function()
+					while isOn do
+						pcall(function()
+							local timerGui = LocalPlayer.PlayerGui:FindFirstChild("Timer")
+							local amt = timerGui and timerGui.Frame.Bags.CashBag.Bag.AmountCollected
+							if amt and amt.Text == "FULL!" and LocalPlayer.Team and LocalPlayer.Team.Name == "Criminals" then
+								local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+								if humanoid then humanoid.Health = 0 end
+							end
+						end)
+						task.wait(1)
+					end
+				end)
+			end
+
+		elseif name == "Reset if Sheriff" then
+			if isOn then
+				task.spawn(function()
+					while isOn do
+						if LocalPlayer.Team and LocalPlayer.Team.Name == "Sheriffs" then
+							local humanoid = char:FindFirstChildWhichIsA("Humanoid")
+							if humanoid then humanoid.Health = 0 end
+						end
+						task.wait(1)
+					end
+				end)
+			end
+
+		elseif name == "Auto Server Hop" then
+			if isOn then
+				task.spawn(function()
+					while isOn do
+						if #Players:GetPlayers() <= 3 then
+							serverHop()
+						end
+						task.wait(1)
+					end
+				end)
+			end
+
+		elseif name == "ESP" then
+			if isOn then
+				task.spawn(function()
+					while isOn do
+						for _, player in pairs(workspace:GetDescendants()) do
+							if player:IsA("Model") and player:FindFirstChild("HumanoidRootPart") then
+								if player:FindFirstChild("HumanoidRootPart").CollisionGroup == "Player" and player ~= char then
+									local playerObject = Players:GetPlayerFromCharacter(player)
+									if playerObject and playerObject.Team and playerObject.Team.Name == "Sheriffs" then
+										if player:FindFirstChild("ESP") then
+											player:FindFirstChild("ESP").Color3 = Color3.new(0, 0, 1)
+										else
+											local box = Instance.new("BoxHandleAdornment", player)
+											box.Name = "ESP"
+											box.Adornee = player
+											box.AlwaysOnTop = true
+											box.Size = Vector3.new(4, 5, 1)
+											box.ZIndex = 0
+											box.Transparency = 0.3
+											box.Color3 = Color3.new(0, 0, 1)
+										end
+									else
+										if not player:FindFirstChild("ESP") then
+											local box = Instance.new("BoxHandleAdornment", player)
+											box.Name = "ESP"
+											box.Adornee = player
+											box.AlwaysOnTop = true
+											box.Size = Vector3.new(4, 5, 1)
+											box.ZIndex = 0
+											box.Transparency = 0.3
+											box.Color3 = Color3.new(0, 1, 0)
+										end
+									end
+								end
+							end
+						end
+						task.wait(1)
+					end
+				end)
+			else
+				for _, e in pairs(workspace:GetDescendants()) do
+					if e.Name == "ESP" then e:Destroy() end
+				end
+			end
+
+		elseif name == "Auto Complete Obby" then
+			if isOn then
+				task.spawn(function()
+					local cooldown = 0
+					while isOn do
+						pcall(function()
+							if humPart and char then
+								local isLobby = LocalPlayer.Team and LocalPlayer.Team.Name == "Lobby"
+								
+								if isLobby or cooldown <= 0 then
+									local obbyEnd = workspace:FindFirstChild("ObbyEndPart", true)
+									local hardObbyEnd = workspace:FindFirstChild("HardObbyEndPart", true)
+									
+									if obbyEnd then
+										humPart.CFrame = obbyEnd.CFrame + Vector3.new(0, 2, 0)
+										task.wait(1)
+									end
+									
+									if hardObbyEnd and isOn then
+										humPart.CFrame = hardObbyEnd.CFrame + Vector3.new(0, 2, 0)
+									end
+									
+									cooldown = 330
+									task.wait(5)
+								end
+							end
+						end)
+						
+						task.wait(1)
+						if cooldown > 0 then
+							cooldown = cooldown - 1
+						end
+					end
+				end)
+			end -- PERBAIKAN: Menutup blok Auto Obby dengan benar agar tidak bocor ke bawah
+
+		elseif name == "Auto Task" then
+			if isOn then
+				task.spawn(function()
+					local visitedTasks = {}
+					while isOn do
+						pcall(function()
+							-- JIKA SHERIFF DEKAT: Auto Task mengalah dan berhenti dulu
+							if _G.SheriffNear then 
+								task.wait(0.5) 
+								return 
+							end
+
+							if humPart and char then
+								local targetHitbox = nil
+								local availableTasks = {}
+
+								for _, v in pairs(workspace:GetDescendants()) do
+									if v:IsA("BasePart") and v.Name == "Hitbox" then
+										if not visitedTasks[v] then
+											table.insert(availableTasks, v)
+										end
+									end
+								end
+								
+								if #availableTasks == 0 then
+									visitedTasks = {}
+									for _, v in pairs(workspace:GetDescendants()) do
+										if v:IsA("BasePart") and v.Name == "Hitbox" then
+											table.insert(availableTasks, v)
+										end
+									end
+								end
+
+								if #availableTasks > 0 then
+									targetHitbox = availableTasks[1]
+								end
+								
+								if targetHitbox then
+									visitedTasks[targetHitbox] = true
+									humPart.CFrame = targetHitbox.CFrame + Vector3.new(0, 2, 0)
+									task.wait(0.3)
+									
+									local prompt = targetHitbox:FindFirstChildOfClass("ProximityPrompt") 
+										or targetHitbox.Parent:FindFirstChildOfClass("ProximityPrompt")
+										or targetHitbox.Parent:FindFirstChild("ProximityPrompt", true)
+									
+									-- PERBAIKAN KOMBO: Proses interaksi menahan E dinamis (Bisa batal instan jika Sheriff datang)
+									if prompt and isOn and not _G.SheriffNear then
+										prompt.HoldDuration = 0
+										prompt:InputHoldBegin() 
+										
+										local timeElapsed = 0
+										while timeElapsed < 5.3 and isOn and not _G.SheriffNear do
+											task.wait(0.1)
+											timeElapsed = timeElapsed + 0.1
+										end
+										
+										prompt:InputHoldEnd()   
+									else
+										task.wait(1) 
+									end
+								end
+							end
+						end)
+						task.wait(0.1)
+					end
+				end)
+			end
+								
+		elseif name == "Auto Run when Sherrif is near" then
+			if isOn then
+				task.spawn(function()
+					while isOn do
+						pcall(function()
+							if humPart and char then
+								local maxDistance = 60 
+								local sheriffNear = false
+								
+								for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+									if p ~= game:GetService("Players").LocalPlayer then
+										local isSheriff = false
+										
+										if p.Team and string.find(p.Team.Name:lower(), "sheriff") then
+											isSheriff = true
+										elseif p.Character and (p.Character:FindFirstChild("Gun") or p.Character:FindFirstChild("Revolver") or p.Character:FindFirstChildWhichIsA("Tool")) then
+											isSheriff = true
+										end
+										
+										if isSheriff and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+											local dist = (humPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
+											if dist <= maxDistance then
+												sheriffNear = true
+												break
+											end
+										end
+									end
+								end
+								
+								if sheriffNear then
+									_G.SheriffNear = true 
+									
+									local lobby = workspace:FindFirstChild("Lobby", true) 
+										or workspace:FindFirstChild("SpawnLocation", true) 
+										or workspace:FindFirstChild("Spawn", true)
+									
+									if lobby then
+										local oldCFrame = humPart.CFrame 
+										
+										if lobby:IsA("Model") then
+											humPart.CFrame = lobby:GetPivot() + Vector3.new(0, 3, 0)
+										else
+											humPart.CFrame = lobby.CFrame + Vector3.new(0, 3, 0)
+										end
+										
+										task.wait(3) 
+										
+										if isOn and humPart and not sheriffNear then
+											humPart.CFrame = oldCFrame
+										end
+									end
+									_G.SheriffNear = false 
+								end
+							end
+						end)
+						task.wait(0.1) 
+					end
+					_G.SheriffNear = false
+				end)
+			else
+				_G.SheriffNear = false
+			end -- PERBAIKAN: Membetulkan posisi penutup blok 'if' agar menyatu dengan rantai utama
+
+		elseif name == "Inf Stamina" then
+			if isOn then
+				task.spawn(function()
+					while isOn do
+						pcall(function()
+							local sprint = LocalPlayer.PlayerGui:FindFirstChild("Modules") and LocalPlayer.PlayerGui.Modules:FindFirstChild("Gameplay") and LocalPlayer.PlayerGui.Modules.Gameplay:FindFirstChild("Sprint")
+							if sprint and sprint:FindFirstChild("Stamina") then
+								sprint.Stamina.Value = 9e9
+							end
+						end)
+						task.wait(0.6)
+					end
+				end)
+			else
+				pcall(function()
+					local sprint = LocalPlayer.PlayerGui.Modules.Gameplay.Sprint
+					if sprint and sprint:FindFirstChild("Stamina") then
+						sprint.Stamina.Value = 6
+					end
+				end)
+			end
+
+		elseif name == "Noclip" then
+			if isOn then
+				local function NoclipLoop()
+					if char then
+						for _, child in pairs(char:GetDescendants()) do
+							if child:IsA("BasePart") and child.CanCollide == true then
+								child.CanCollide = false
+							end
+						end
+					end
+				end
+				_G.NoclippingHook = RunService.Stepped:Connect(NoclipLoop)
+			else
+				if _G.NoclippingHook then
+					_G.NoclippingHook:Disconnect()
+					_G.NoclippingHook = nil
+				end
+			end
+		end
+	end)
+end
+
+local function CreateScriptButton(name, callback)
+	local Row = Instance.new("Frame")
+	Row.Size = UDim2.new(1,-10,0,45)
+	Row.BackgroundColor3 = Color3.fromRGB(18,32,55)
+	Row.Parent = ScrollList
+	Instance.new("UICorner", Row).CornerRadius = UDim.new(0,8)
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Color = Color3.fromRGB(0,100,180)
+	Stroke.Parent = Row
+
+	local Label = Instance.new("TextLabel")
+	Label.Size = UDim2.new(0.7,0,1,0)
+	Label.Position = UDim2.new(0,15,0,0)
+	Label.BackgroundTransparency = 1
+	Label.Text = name
+	Label.TextColor3 = Color3.fromRGB(240,245,255)
+	Label.TextSize = 15
+	Label.Font = Enum.Font.GothamMedium
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = Row
+
+	local ActionBtn = Instance.new("TextButton")
+	ActionBtn.Size = UDim2.new(0,75,0,26)
+	ActionBtn.Position = UDim2.new(1,-90,0.5,-13)
+	ActionBtn.BackgroundColor3 = Color3.fromRGB(0,150,255)
+	ActionBtn.Text = "RUN"
+	ActionBtn.TextColor3 = Color3.fromRGB(255,255,255)
+	ActionBtn.Font = Enum.Font.GothamBold
+	ActionBtn.TextSize = 12
+	ActionBtn.Parent = Row
+	Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0,6)
+
+	ActionBtn.MouseButton1Click:Connect(callback)
+endtrue
 	end
 end)
 
@@ -367,47 +761,54 @@ local function CreateScriptRow(name, defaultState)
 				end
 			end
 
-				elseif name == "Auto Complete Obby" then
+		elseif name == "Auto Complete Obby" then
 			if isOn then
 				task.spawn(function()
-					local cooldown = 0 -- Timer internal untuk fallback 5.5 menit
+					local cooldown = 0
 					while isOn do
 						pcall(function()
 							if humPart and char then
-								-- Cek apakah saat ini pemain sedang berada di tim "Lobby"
 								local isLobby = LocalPlayer.Team and LocalPlayer.Team.Name == "Lobby"
 								
-								-- Pemicu: Jika kembali ke tim Lobby ATAU cooldown 5.5 menit sudah habis (cooldown <= 0)
 								if isLobby or cooldown <= 0 then
 									local obbyEnd = workspace:FindFirstChild("ObbyEndPart", true)
 									local hardObbyEnd = workspace:FindFirstChild("HardObbyEndPart", true)
 									
-									-- 1. Teleport ke ObbyEndPart
 									if obbyEnd then
 										humPart.CFrame = obbyEnd.CFrame + Vector3.new(0, 2, 0)
-										task.wait(1) -- Tunggu 1 detik
+										task.wait(1)
 									end
 									
-									-- 2. Teleport ke HardObbyEndPart
 									if hardObbyEnd and isOn then
 										humPart.CFrame = hardObbyEnd.CFrame + Vector3.new(0, 2, 0)
 									end
 									
-									-- Reset cooldown kembali ke 5.5 menit (330 detik)
 									cooldown = 330
-									
-									-- Jeda aman 5 detik agar script tidak spam TP saat game sedang memproses perpindahan tim kamu
 									task.wait(5)
 								end
 							end
 						end)
-								
-        elseif name == "Auto Task" then
+						
+						task.wait(1)
+						if cooldown > 0 then
+							cooldown = cooldown - 1
+						end
+					end
+				end)
+			end -- PERBAIKAN: Menutup blok Auto Obby dengan benar agar tidak bocor ke bawah
+
+		elseif name == "Auto Task" then
 			if isOn then
 				task.spawn(function()
 					local visitedTasks = {}
 					while isOn do
 						pcall(function()
+							-- JIKA SHERIFF DEKAT: Auto Task mengalah dan berhenti dulu
+							if _G.SheriffNear then 
+								task.wait(0.5) 
+								return 
+							end
+
 							if humPart and char then
 								local targetHitbox = nil
 								local availableTasks = {}
@@ -442,10 +843,17 @@ local function CreateScriptRow(name, defaultState)
 										or targetHitbox.Parent:FindFirstChildOfClass("ProximityPrompt")
 										or targetHitbox.Parent:FindFirstChild("ProximityPrompt", true)
 									
-									if prompt and isOn then
+									-- PERBAIKAN KOMBO: Proses interaksi menahan E dinamis (Bisa batal instan jika Sheriff datang)
+									if prompt and isOn and not _G.SheriffNear then
 										prompt.HoldDuration = 0
 										prompt:InputHoldBegin() 
-										task.wait(5.3)           -- << Sudah diubah jadi 5 detik
+										
+										local timeElapsed = 0
+										while timeElapsed < 5.3 and isOn and not _G.SheriffNear do
+											task.wait(0.1)
+											timeElapsed = timeElapsed + 0.1
+										end
+										
 										prompt:InputHoldEnd()   
 									else
 										task.wait(1) 
@@ -464,10 +872,9 @@ local function CreateScriptRow(name, defaultState)
 					while isOn do
 						pcall(function()
 							if humPart and char then
-								local maxDistance = 60 -- Jarak diperluas ke 60 studs agar lebih sigap kabur
+								local maxDistance = 60 
 								local sheriffNear = false
 								
-								-- 1. Deteksi Ganda Akurat (Nama Tim mengandung kata 'sheriff' ATAU memegang Senjata)
 								for _, p in pairs(game:GetService("Players"):GetPlayers()) do
 									if p ~= game:GetService("Players").LocalPlayer then
 										local isSheriff = false
@@ -488,42 +895,39 @@ local function CreateScriptRow(name, defaultState)
 									end
 								end
 								
-								-- 2. Proses Teleportasi Darurat
 								if sheriffNear then
-									_G.SheriffNear = true -- Mengunci Auto Task agar melepaskan tombol E
+									_G.SheriffNear = true 
 									
 									local lobby = workspace:FindFirstChild("Lobby", true) 
 										or workspace:FindFirstChild("SpawnLocation", true) 
 										or workspace:FindFirstChild("Spawn", true)
 									
 									if lobby then
-										local oldCFrame = humPart.CFrame -- Simpan posisi aman tempat kerja sebelumnya
+										local oldCFrame = humPart.CFrame 
 										
-										-- Pindah Instan ke Lobby
 										if lobby:IsA("Model") then
 											humPart.CFrame = lobby:GetPivot() + Vector3.new(0, 3, 0)
 										else
 											humPart.CFrame = lobby.CFrame + Vector3.new(0, 3, 0)
 										end
 										
-										task.wait(3) -- Sembunyi di lobby selama 3 detik
+										task.wait(3) 
 										
-										-- Kembali ke tempat kerja jika kondisi aman dan fitur masih aktif
 										if isOn and humPart and not sheriffNear then
 											humPart.CFrame = oldCFrame
 										end
 									end
-									_G.SheriffNear = false -- Membuka kembali ijin jalan untuk Auto Task
+									_G.SheriffNear = false 
 								end
 							end
 						end)
-						task.wait(0.1) -- PERBAIKAN FATAL: Deteksi dipercepat ke 0.1 detik (Instan / Refleks Dewa)
+						task.wait(0.1) 
 					end
 					_G.SheriffNear = false
 				end)
 			else
 				_G.SheriffNear = false
-		end
+			end -- PERBAIKAN: Membetulkan posisi penutup blok 'if' agar menyatu dengan rantai utama
 
 		elseif name == "Inf Stamina" then
 			if isOn then
@@ -603,7 +1007,6 @@ local function CreateScriptButton(name, callback)
 
 	ActionBtn.MouseButton1Click:Connect(callback)
 end
-
 ----------------------------------------------------
 -- REGISTRASI FITUR MENU
 ----------------------------------------------------
