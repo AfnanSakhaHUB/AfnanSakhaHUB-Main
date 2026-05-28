@@ -927,12 +927,14 @@ CreateScriptRow("Auto Run when Sherrif is near", false)
 CreateScriptRow("Inf Stamina", false)
 CreateScriptRow("Noclip", false)
 
-CreateScriptButton("Update script just 50 Robux! [Thibaut_Yashin]", function()
-	local player = game.Players.LocalPlayer
-	local gamepass = 1859876575 -- ID Gamepass Anda
+-- Pastikan MarketplaceService sudah dipanggil (bisa ditaruh di sini atau di bagian paling atas script)
+local MarketplaceService = game:GetService("MarketplaceService")
 
-	-- Menggunakan MarketplaceService persis seperti di screenshot
-	game:GetService("MarketplaceService"):PromptGamePassPurchase(player, gamepass)
+CreateScriptButton("Update script just 50 Robux! [Thibaut_Yashin]", function()
+    local gamepassId = 1859876575
+    pcall(function()
+        MarketplaceService:PromptGamePassPurchase(LocalPlayer, gamepassId)
+    end)
 end)
 
 CreateScriptButton("Server Hop", function()
