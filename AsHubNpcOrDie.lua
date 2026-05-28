@@ -510,7 +510,7 @@ elseif name == "Auto Run when Sherrif is near" then
 						local sheriffNear = false
 						local detectedSheriffPart = nil
 						
-						-- 2. Deteksi Keberadaan & Arah Pandang Sheriff
+						-- 2. Deteksi Keberadaan, Arah Pandang, & Penghalang (Raycast)
 						for _, p in pairs(game:GetService("Players"):GetPlayers()) do
 							if p ~= game:GetService("Players").LocalPlayer then
 								local isSheriff = false
@@ -525,18 +525,29 @@ elseif name == "Auto Run when Sherrif is near" then
 									local sPart = p.Character.HumanoidRootPart
 									local dist = (humPart.Position - sPart.Position).Magnitude
 									
-									-- Jika Sheriff masuk dalam radius maxDistance
+									-- Jika Sheriff masuk dalam radius jarak maksimal
 									if dist <= maxDistance then
-										-- [LOGIKA BARU]: Hitung arah hadap Sheriff menggunakan Dot Product
-										local sheriffLook = sPart.CFrame.LookVector -- Arah muka Sheriff
-										local directionToMe = (humPart.Position - sPart.Position).Unit -- Arah dari Sheriff ke Player
-										local dotProduct = sheriffLook:Dot(directionToMe) -- Kombinasi kedua arah
+										local sheriffLook = sPart.CFrame.LookVector 
+										local directionToMe = (humPart.Position - sPart.Position).Unit 
+										local dotProduct = sheriffLook:Dot(directionToMe) 
 										
-										-- dotProduct > 0.5 berarti Sheriff sedang melihat/menghadap ke arahmu (sudut cone sekitar 60 derajat)
-										if dotProduct > 0.5 then
-											sheriffNear = true
-											detectedSheriffPart = sPart
-											break
+										-- [PRESISI]: Nilai 0.8 berarti Sheriff melihat sangat presisi ke arahmu
+										if dotProduct > 0.8 then
+											
+											-- [FITUR BARU]: Pengecekan Garis Pandang (Line of Sight) lewat Raycast
+											local raycastParams = RaycastParams.new()
+											raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+											raycastParams.FilterDescendantsInstances = {p.Character} -- Abaikan tubuh Sheriff sendiri agar laser tidak terhalang badannya
+											
+											-- Tembakkan laser dari posisi Sheriff ke posisi Player
+											local raycastResult = workspace:Raycast(sPart.Position, humPart.Position - sPart.Position, raycastParams)
+											
+											-- Jika laser menabrak sesuatu, pastikan yang tertabrak adalah bagian dari karakter kita (artinya TANPA HALANGAN)
+											if raycastResult and raycastResult.Instance:IsDescendantOf(char) then
+												sheriffNear = true
+												detectedSheriffPart = sPart
+												break
+											end
 										end
 									end
 								end
