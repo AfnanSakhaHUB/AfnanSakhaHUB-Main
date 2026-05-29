@@ -28,6 +28,22 @@ LocalPlayer.CharacterAdded:Connect(function(newChar)
 end)
 
 ----------------------------------------------------
+-- Cheker
+----------------------------------------------------
+-- Ambil Player Lokal
+local LocalPlayer = game:GetService("Players").LocalPlayer
+
+-- Cek apakah PlaceId saat ini TIDAK SAMA dengan ID yang benar
+if game.PlaceId ~= 11276071411 then
+    -- Kick player secara instan dengan pesan kustom
+    LocalPlayer:Kick("Access Denied: This script is not allowed in this game!")
+    return -- Hentikan seluruh eksekusi script ke bawah
+end
+
+-- [ Tulis sisa script/UI kamu di bawah ini, aman dari pembajakan ]
+print("Game terverifikasi! Menjalankan script...")
+
+----------------------------------------------------
 -- AUTO CLEANUP UI LAMA
 ----------------------------------------------------
 local oldUI1 = PlayerGui:FindFirstChild("AfnanSakhaLoadingScreen")
