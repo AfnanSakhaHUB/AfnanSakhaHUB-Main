@@ -1,4 +1,4 @@
---// AFNANSAKHA HUB LOADER + MAIN GUI
+--// AFNANSAKHA HUB LOADER + MAIN GUI (WITH STUFF SEARCH)
 --// Tempatkan di: StarterGui -> LocalScript
 
 local Players = game:GetService("Players")
@@ -17,6 +17,9 @@ if oldUI1 then oldUI1:Destroy() end
 
 local oldUI2 = PlayerGui:FindFirstChild("AfnanSakhaHubUI")
 if oldUI2 then oldUI2:Destroy() end
+
+local oldVisuals = Workspace:FindFirstChild("AfnanSearchVisuals")
+if oldVisuals then oldVisuals:Destroy() end
 
 ----------------------------------------------------
 -- LOADING SCREEN
@@ -189,7 +192,7 @@ local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0,550,0,400)
 MainFrame.Position = UDim2.new(0.5,-275,0.5,-200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(12,22,37)
+MainFrame.BackgroundColor3 = Color3.fromRGB(12,22,38)
 MainFrame.BackgroundTransparency = 0.15
 MainFrame.Parent = ScreenGui
 
@@ -296,9 +299,221 @@ Layout.Padding = UDim.new(0,8)
 Layout.Parent = ScrollList
 
 ----------------------------------------------------
+-- DRAGGABLE ENGINE UTILITY DEFINITION
+----------------------------------------------------
+local function MakeDraggable(uiElement)
+	local dragging
+	local dragInput
+	local dragStart
+	local startPos
+
+	uiElement.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true
+			dragStart = input.Position
+			startPos = uiElement.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	uiElement.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement
+			or input.UserInputType == Enum.UserInputType.Touch then
+			dragInput = input
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			local delta = input.Position - dragStart
+			uiElement.Position = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+end
+
+----------------------------------------------------
+-- ENGINE DYNAMIC STUFFSEARCH UI FUNCTION
+----------------------------------------------------
+local function ToggleStuffSearchUI(enable)
+	local searchFrameName = "AfnanSakha_SearchPanel"
+	local existingSearch = ScreenGui:FindFirstChild(searchFrameName)
+
+	-- Hapus visual tracking lama di Workspace jika ada
+	local oldVisuals = Workspace:FindFirstChild("AfnanSearchVisuals")
+	if oldVisuals then oldVisuals:Destroy() end
+
+	if not enable then
+		if existingSearch then existingSearch:Destroy() end
+		return
+	end
+
+	if existingSearch then return end
+
+	-- Membuat Panel Pencarian Baru Sisi Klien
+	local SearchFrame = Instance.new("Frame")
+	SearchFrame.Name = searchFrameName
+	SearchFrame.Size = UDim2.new(0, 320, 0, 280)
+	SearchFrame.Position = UDim2.new(0, 30, 0.5, -140)
+	SearchFrame.BackgroundColor3 = Color3.fromRGB(15, 28, 48)
+	SearchFrame.BackgroundTransparency = 0.1
+	SearchFrame.Parent = ScreenGui
+	Instance.new("UICorner", SearchFrame).CornerRadius = UDim.new(0, 10)
+	
+	local SearchStroke = Instance.new("UIStroke")
+	SearchStroke.Color = Color3.fromRGB(0, 180, 255)
+	SearchStroke.Thickness = 2
+	SearchStroke.Parent = SearchFrame
+
+	local SearchTitle = Instance.new("TextLabel")
+	SearchTitle.Size = UDim2.new(1, -20, 0, 35)
+	SearchTitle.Position = UDim2.new(0, 12, 0, 5)
+	SearchTitle.BackgroundTransparency = 1
+	SearchTitle.Text = "STUFF SEARCH ENGINE"
+	SearchTitle.TextColor3 = Color3.fromRGB(0, 230, 255)
+	SearchTitle.TextSize = 14
+	SearchTitle.Font = Enum.Font.GothamBold
+	SearchTitle.TextXAlignment = Enum.TextXAlignment.Left
+	SearchTitle.Parent = SearchFrame
+
+	local TextBox = Instance.new("TextBox")
+	TextBox.Size = UDim2.new(1, -24, 0, 35)
+	TextBox.Position = UDim2.new(0, 12, 0, 45)
+	TextBox.BackgroundColor3 = Color3.fromRGB(22, 38, 65)
+	TextBox.Text = ""
+	TextBox.PlaceholderText = "Masukkan nama benda (ex: Wild)..."
+	TextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+	TextBox.PlaceholderColor3 = Color3.fromRGB(120, 140, 170)
+	TextBox.TextSize = 13
+	TextBox.Font = Enum.Font.GothamMedium
+	TextBox.ClipsDescendants = true
+	TextBox.Parent = SearchFrame
+	Instance.new("UICorner", TextBox).CornerRadius = UDim.new(0, 6)
+	Instance.new("UIStroke", TextBox).Color = Color3.fromRGB(0, 120, 200)
+
+	local SearchBtn = Instance.new("TextButton")
+	SearchBtn.Size = UDim2.new(1, -24, 0, 32)
+	SearchBtn.Position = UDim2.new(0, 12, 0, 90)
+	SearchBtn.BackgroundColor3 = Color3.fromRGB(0, 110, 220)
+	SearchBtn.Text = "CARI BENDA"
+	SearchBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	SearchBtn.TextSize = 13
+	SearchBtn.Font = Enum.Font.GothamBold
+	SearchBtn.Parent = SearchFrame
+	Instance.new("UICorner", SearchBtn).CornerRadius = UDim.new(0, 6)
+
+	local ResultScroll = Instance.new("ScrollingFrame")
+	ResultScroll.Size = UDim2.new(1, -24, 0, 135)
+	ResultScroll.Position = UDim2.new(0, 12, 0, 132)
+	ResultScroll.BackgroundTransparency = 1
+	ResultScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	ResultScroll.ScrollBarThickness = 3
+	ResultScroll.ScrollBarImageColor3 = Color3.fromRGB(0, 180, 255)
+	ResultScroll.Parent = SearchFrame
+
+	local ResultLayout = Instance.new("UIListLayout")
+	ResultLayout.Padding = UDim.new(0, 5)
+	ResultLayout.Parent = ResultScroll
+
+	MakeDraggable(SearchFrame)
+
+	-- Logika Tombol Engine Pencarian
+	SearchBtn.MouseButton1Click:Connect(function()
+		local query = string.lower(TextBox.Text)
+		if query == "" then return end
+
+		-- Hapus data list & visual world lama sebelum scan ulang
+		for _, v in ipairs(ResultScroll:GetChildren()) do
+			if v:IsA("TextLabel") then v:Destroy() end
+		end
+		local oldV = Workspace:FindFirstChild("AfnanSearchVisuals")
+		if oldV then oldV:Destroy() end
+
+		local VisualFolder = Instance.new("Folder")
+		VisualFolder.Name = "AfnanSearchVisuals"
+		VisualFolder.Parent = Workspace
+
+		local count = 0
+		for _, obj in ipairs(Workspace:GetDescendants()) do
+			if (obj:IsA("BasePart") or obj:IsA("Model")) and not obj:IsDescendantOf(LocalPlayer.Character) then
+				if obj.Name ~= "Terrain" and obj.Name ~= "Baseplate" then
+					
+					-- Validasi pencarian string (Sub-string matching logic)
+					if string.find(string.lower(obj.Name), query) then
+						count = count + 1
+						
+						-- Tambahkan ke daftar UI hasil pencarian
+						local ItemLabel = Instance.new("TextLabel")
+						ItemLabel.Size = UDim2.new(1, 0, 0, 22)
+						ItemLabel.BackgroundColor3 = Color3.fromRGB(26, 44, 76)
+						ItemLabel.Text = "  [" .. count .. "] " .. obj.Name
+						ItemLabel.TextColor3 = Color3.fromRGB(230, 245, 255)
+						ItemLabel.TextSize = 12
+						ItemLabel.Font = Enum.Font.GothamMedium
+						ItemLabel.TextXAlignment = Enum.TextXAlignment.Left
+						ItemLabel.Parent = ResultScroll
+						Instance.new("UICorner", ItemLabel).CornerRadius = UDim.new(0, 4)
+
+						-- Berikan pin visual tracker ke objek asli di workspace game
+						local rootPart = obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true)) or obj
+						if rootPart and rootPart:IsA("BasePart") then
+							local BGui = Instance.new("BillboardGui")
+							BGui.Size = UDim2.new(0, 140, 0, 30)
+							BGui.AlwaysOnTop = true
+							BGui.Adornee = rootPart
+							BGui.Parent = VisualFolder
+
+							local TagText = Instance.new("TextLabel")
+							TagText.Size = UDim2.new(1, 0, 1, 0)
+							TagText.BackgroundTransparency = 1
+							TagText.Text = "🔍 " .. obj.Name
+							TagText.TextColor3 = Color3.fromRGB(0, 210, 255)
+							TagText.TextStrokeTransparency = 0
+							TagText.TextSize = 12
+							TagText.Font = Enum.Font.SourceSansBold
+							TagText.Parent = BGui
+
+							local High = Instance.new("Highlight")
+							High.Adornee = obj
+							High.FillColor = Color3.fromRGB(0, 180, 255)
+							High.FillTransparency = 0.6
+							High.OutlineColor = Color3.fromRGB(255, 255, 255)
+							High.Parent = VisualFolder
+						end
+					end
+				end
+			end
+		end
+
+		ResultScroll.CanvasSize = UDim2.new(0, 0, 0, ResultLayout.AbsoluteContentSize.Y + 10)
+		if count == 0 then
+			local NoResult = Instance.new("TextLabel")
+			NoResult.Size = UDim2.new(1, 0, 0, 30)
+			NoResult.BackgroundTransparency = 1
+			NoResult.Text = "Benda tidak ditemukan."
+			NoResult.TextColor3 = Color3.fromRGB(255, 100, 100)
+			NoResult.TextSize = 12
+			NoResult.Font = Enum.Font.GothamMedium
+			NoResult.Parent = ResultScroll
+		end
+	end)
+end
+
+----------------------------------------------------
 -- SCRIPT ROW SYSTEM
 ----------------------------------------------------
 _G.EspBendaDekatActive = false -- Status Global ESP
+_G.StuffSearchActive = false   -- Status Global StuffSearch
 
 local function CreateScriptRow(name, defaultState)
 
@@ -381,15 +596,19 @@ local function CreateScriptRow(name, defaultState)
 			{BackgroundColor3 = targetColor}
 		):Play()
 
-		-- SISTEM PENGAKTIFAN KUSTOM ESP RADIUS 5 STUDS
+		-- INTERMEDIATE DISPATCH CONTROLLER FUNGSI KUSTOM HUB
 		if name == "Detector ESP (Radius 5)" then
 			_G.EspBendaDekatActive = isOn
+		elseif name == "StuffSearch" then
+			_G.StuffSearchActive = isOn
+			ToggleStuffSearchUI(isOn)
 		end
 	end)
 end
 
 -- Menambahkan Fitur Baru Kedalam Daftar Hub
 CreateScriptRow("Detector ESP (Radius 5)", false)
+CreateScriptRow("StuffSearch", false)
 
 ----------------------------------------------------
 -- EXECUTE BUTTON
@@ -419,7 +638,7 @@ ExecGradient.Parent = ExecuteAllBtn
 local PastebinBtn = Instance.new("TextButton")
 PastebinBtn.Size = UDim2.new(0.23,0,0,40)
 PastebinBtn.Position = UDim2.new(0.74,0,1,-50)
-PastebinBtn.BackgroundColor3 = Color3.fromRGB(20,40,70)
+PastebinBtn.BackgroundColor3= Color3.fromRGB(20,40,70)
 PastebinBtn.Text = "PASTE BIN"
 PastebinBtn.TextColor3 = Color3.fromRGB(0,200,255)
 PastebinBtn.TextSize = 13
@@ -468,57 +687,8 @@ RoundToggleBtn.MouseButton1Click:Connect(function()
 end)
 
 ----------------------------------------------------
--- DRAGGABLE SYSTEM
+-- DRAGGABLE INITIALIZER CALLS
 ----------------------------------------------------
-local function MakeDraggable(uiElement)
-
-	local dragging
-	local dragInput
-	local dragStart
-	local startPos
-
-	uiElement.InputBegan:Connect(function(input)
-
-		if input.UserInputType == Enum.UserInputType.MouseButton1
-		or input.UserInputType == Enum.UserInputType.Touch then
-
-			dragging = true
-			dragStart = input.Position
-			startPos = uiElement.Position
-
-			input.Changed:Connect(function()
-				if input.UserInputState == Enum.UserInputState.End then
-					dragging = false
-				end
-			end)
-		end
-	end)
-
-	uiElement.InputChanged:Connect(function(input)
-
-		if input.UserInputType == Enum.UserInputType.MouseMovement
-		or input.UserInputType == Enum.UserInputType.Touch then
-
-			dragInput = input
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-
-		if input == dragInput and dragging then
-
-			local delta = input.Position - dragStart
-
-			uiElement.Position = UDim2.new(
-				startPos.X.Scale,
-				startPos.X.Offset + delta.X,
-				startPos.Y.Scale,
-				startPos.Y.Offset + delta.Y
-			)
-		end
-	end)
-end
-
 MakeDraggable(MainFrame)
 MakeDraggable(RoundToggleBtn)
 
@@ -545,7 +715,6 @@ local function bersihkanESP(objek)
 end
 
 local function buatTagESP(objek, partUtama, teks)
-	-- Jika sudah ada teksnya, tinggal perbarui teksnya biar akurat
 	local dataESP = objek:FindFirstChild("AfnanSakha_Esp5Studs")
 	if dataESP then
 		local bGui = dataESP:FindFirstChildOfClass("BillboardGui")
@@ -555,7 +724,6 @@ local function buatTagESP(objek, partUtama, teks)
 		return
 	end
 
-	-- Membuat kontainer ESP baru
 	local folderESP = Instance.new("Folder")
 	folderESP.Name = "AfnanSakha_Esp5Studs"
 	folderESP.Parent = objek
@@ -570,7 +738,7 @@ local function buatTagESP(objek, partUtama, teks)
 	local textLabel = Instance.new("TextLabel")
 	textLabel.Size = UDim2.new(1, 0, 1, 0)
 	textLabel.BackgroundTransparency = 1
-	textLabel.TextColor3 = Color3.fromRGB(0, 255, 128) -- Hijau Neon
+	textLabel.TextColor3 = Color3.fromRGB(0, 255, 128)
 	textLabel.TextStrokeTransparency = 0
 	textLabel.TextStrokeColor3 = Color3.fromRGB(0,0,0)
 	textLabel.TextSize = 13
@@ -579,31 +747,25 @@ local function buatTagESP(objek, partUtama, teks)
 	textLabel.Parent = billboard
 end
 
--- Thread Loop Utama yang berjalan di latar belakang (Background Thread)
 task.spawn(function()
 	while true do
-		-- Cek apakah Tombol UI Aktif dan Karakter kita sudah spawn sepenuhnya
 		if _G.EspBendaDekatActive and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
 			local rootPlayer = LocalPlayer.Character.HumanoidRootPart.Position
 
 			for _, objek in ipairs(Workspace:GetDescendants()) do
-				-- Proteksi jika di tengah jalan fiturnya dimatikan user
 				if not _G.EspBendaDekatActive then break end
 
 				if (objek:IsA("Model") or objek:IsA("BasePart")) and not objek:IsDescendantOf(LocalPlayer.Character) then
 					if objek.Name ~= "Terrain" and objek.Name ~= "Baseplate" then
 						
-						-- Validasi komponen part utama objek
 						local partUtama = objek:IsA("Model") and (objek.PrimaryPart or objek:FindFirstChildWhichIsA("BasePart", true)) or objek
 						if partUtama and partUtama:IsA("BasePart") then
 							
-							-- Rumus Jarak Matematika (Magnitude) untuk menyaring 5 studs depan/belakang/sekitar
 							local jarak = (partUtama.Position - rootPlayer).Magnitude
 
 							if jarak <= 5 then
 								local isiTeks = "Nama: " .. objek.Name
 								
-								-- Deteksi Tombol Key PC (ProximityPrompt) jika tersedia di objek tersebut
 								local prompt = objek:FindFirstChildOfClass("ProximityPrompt") or objek:FindFirstChildWhichIsA("ProximityPrompt", true)
 								if prompt then
 									isiTeks = isiTeks .. "\n[PC Key: " .. prompt.KeyboardKeyCode.Name .. "]"
@@ -611,7 +773,6 @@ task.spawn(function()
 								
 								buatTagESP(objek, partUtama, isiTeks)
 							else
-								-- Jika menjauh lebih dari 5 studs, hapus tulisan biar bersih & anti-lag
 								bersihkanESP(objek)
 							end
 						end
@@ -619,11 +780,10 @@ task.spawn(function()
 				end
 			end
 		else
-			-- Jika tombol dinonaktifkan (OFF), paksa hapus seluruh sisa ESP di map
 			for _, objek in ipairs(Workspace:GetDescendants()) do
 				bersihkanESP(objek)
 			end
 		end
-		task.wait(0.15) -- Interval refresh cepat demi akurasi jarak tanpa membebani CPU/HP
+		task.wait(0.15)
 	end
 end)
