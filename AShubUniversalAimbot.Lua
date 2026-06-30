@@ -1,6 +1,3 @@
---// AFNANSAKHA HUB LOADER + MAIN GUI (CIRCLE LOCK & SHOOT LOCK)
---// Tempatkan di: StarterGui -> LocalScript
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,18 +7,12 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Camera = workspace.CurrentCamera
 
-----------------------------------------------------
--- AUTO CLEANUP
-----------------------------------------------------
 local oldUI1 = PlayerGui:FindFirstChild("AfnanSakhaLoadingScreen")
 if oldUI1 then oldUI1:Destroy() end
 
 local oldUI2 = PlayerGui:FindFirstChild("AfnanSakhaHubUI")
 if oldUI2 then oldUI2:Destroy() end
 
-----------------------------------------------------
--- LOADING SCREEN
-----------------------------------------------------
 local LoadingGui = Instance.new("ScreenGui")
 LoadingGui.Name = "AfnanSakhaLoadingScreen"
 LoadingGui.ResetOnSpawn = false
@@ -29,12 +20,11 @@ LoadingGui.IgnoreGuiInset = true
 LoadingGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 LoadingGui.Parent = PlayerGui
 
--- Background
 local Background = Instance.new("Frame")
 Background.Size = UDim2.new(1,0,1,0)
 Background.BackgroundColor3 = Color3.fromRGB(10,15,30)
 Background.BorderSizePixel = 0
-Background.Parent = Background
+Background.Parent = LoadingGui
 
 local UIGradient = Instance.new("UIGradient")
 UIGradient.Color = ColorSequence.new{
@@ -44,14 +34,12 @@ UIGradient.Color = ColorSequence.new{
 UIGradient.Rotation = 45
 UIGradient.Parent = Background
 
--- Main Container
 local MainContainer = Instance.new("Frame")
 MainContainer.Size = UDim2.new(0,500,0,150)
 MainContainer.Position = UDim2.new(0.5,-250,0.5,-75)
 MainContainer.BackgroundTransparency = 1
 MainContainer.Parent = Background
 
--- Title
 local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1,0,0,30)
 TitleLabel.BackgroundTransparency = 1
@@ -62,7 +50,6 @@ TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = MainContainer
 
--- Bar BG
 local BarBackground = Instance.new("Frame")
 BarBackground.Size = UDim2.new(1,0,0,40)
 BarBackground.Position = UDim2.new(0,0,0,45)
@@ -77,7 +64,6 @@ BarStroke.Color = Color3.fromRGB(0,150,255)
 BarStroke.Thickness = 1.5
 BarStroke.Parent = BarBackground
 
--- Fill
 local BarFill = Instance.new("Frame")
 BarFill.Size = UDim2.new(0,0,1,0)
 BarFill.BackgroundColor3 = Color3.fromRGB(0,180,255)
@@ -93,7 +79,6 @@ FillGradient.Color = ColorSequence.new{
 }
 FillGradient.Parent = BarFill
 
--- Status
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(1,0,0,30)
 StatusLabel.Position = UDim2.new(0,0,0,95)
@@ -105,9 +90,6 @@ StatusLabel.Font = Enum.Font.GothamMedium
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
 StatusLabel.Parent = MainContainer
 
-----------------------------------------------------
--- LOADING ANIMATION
-----------------------------------------------------
 local totalAssets = 100
 local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
@@ -115,17 +97,9 @@ task.wait(1)
 
 for i = 1, totalAssets do
 	local progress = i / totalAssets
-
-	local tween = TweenService:Create(
-		BarFill,
-		tweenInfo,
-		{Size = UDim2.new(progress,0,1,0)}
-	)
-
+	local tween = TweenService:Create(BarFill, tweenInfo, {Size = UDim2.new(progress,0,1,0)})
 	tween:Play()
-
 	StatusLabel.Text = i .. "/" .. totalAssets .. " assets loaded"
-
 	if i < 20 or i > 80 then
 		task.wait(0.02)
 	elseif i == 50 or i == 75 then
@@ -138,44 +112,24 @@ end
 StatusLabel.Text = "Selesai!"
 task.wait(0.5)
 
-----------------------------------------------------
--- FADE OUT
-----------------------------------------------------
 local fadeTweenInfo = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-
-TweenService:Create(
-	Background,
-	fadeTweenInfo,
-	{BackgroundTransparency = 1}
-):Play()
+TweenService:Create(Background, fadeTweenInfo, {BackgroundTransparency = 1}):Play()
 
 for _, child in ipairs(MainContainer:GetChildren()) do
 	if child:IsA("TextLabel") then
-		TweenService:Create(child, fadeTweenInfo, {
-			TextTransparency = 1
-		}):Play()
-
+		TweenService:Create(child, fadeTweenInfo, {TextTransparency = 1}):Play()
 	elseif child:IsA("Frame") then
-		TweenService:Create(child, fadeTweenInfo, {
-			BackgroundTransparency = 1
-		}):Play()
-
+		TweenService:Create(child, fadeTweenInfo, {BackgroundTransparency = 1}):Play()
 		local stroke = child:FindFirstChildOfClass("UIStroke")
 		if stroke then
-			TweenService:Create(stroke, fadeTweenInfo, {
-				Transparency = 1
-			}):Play()
+			TweenService:Create(stroke, fadeTweenInfo, {Transparency = 1}):Play()
 		end
 	end
 end
 
 task.wait(0.6)
-
 LoadingGui:Destroy()
 
-----------------------------------------------------
--- MAIN GUI
-----------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AfnanSakhaHubUI"
 ScreenGui.ResetOnSpawn = false
@@ -183,23 +137,15 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.IgnoreGuiInset = true
 ScreenGui.Parent = PlayerGui
 
-----------------------------------------------------
--- LOGIKA VARIABEL UTAMA FITUR LOCK
-----------------------------------------------------
 local circleEnabled = false
 local shootLockEnabled = false
 local dontLockTeammate = false
-
 local circleRadius = 100
 local targetBodyPart = "Head"
-
 local shootLockActiveUntil = 0
 local currentShootLockTarget = nil
-
--- Tabel pelacak koordinat sentuhan mobile (Untuk memisahkan geser kamera vs klik)
 local activeTouches = {}
 
--- Objek UI Lingkaran
 local TargetCircle = Instance.new("Frame")
 TargetCircle.Name = "AfnanSakhaTargetCircle"
 TargetCircle.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -222,9 +168,6 @@ local function UpdateCircleVisual()
 	TargetCircle.Size = UDim2.new(0, circleRadius * 2, 0, circleRadius * 2)
 end
 
-----------------------------------------------------
--- MAIN PANEL
-----------------------------------------------------
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0,550,0,400)
@@ -240,9 +183,6 @@ MainStroke.Color = Color3.fromRGB(0,180,255)
 MainStroke.Thickness = 2
 MainStroke.Parent = MainFrame
 
-----------------------------------------------------
--- TITLE
-----------------------------------------------------
 local ExecTitle = Instance.new("TextLabel")
 ExecTitle.Size = UDim2.new(1,-50,0,40)
 ExecTitle.Position = UDim2.new(0,15,0,5)
@@ -254,9 +194,6 @@ ExecTitle.Font = Enum.Font.GothamBold
 ExecTitle.TextXAlignment = Enum.TextXAlignment.Left
 ExecTitle.Parent = MainFrame
 
-----------------------------------------------------
--- CLOSE BUTTON
-----------------------------------------------------
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0,30,0,30)
 CloseBtn.Position = UDim2.new(1,-40,0,8)
@@ -273,9 +210,6 @@ local CloseStroke = Instance.new("UIStroke")
 CloseStroke.Color = Color3.fromRGB(0,130,200)
 CloseStroke.Parent = CloseBtn
 
-----------------------------------------------------
--- TABS
-----------------------------------------------------
 local TabContainer = Instance.new("Frame")
 TabContainer.Size = UDim2.new(1,-30,0,35)
 TabContainer.Position = UDim2.new(0,15,0,50)
@@ -304,9 +238,6 @@ CreateTab("SCRIPTS",1)
 CreateTab("SETTINGS",2)
 CreateTab("HISTORY",3)
 
-----------------------------------------------------
--- SCRIPT LIST
-----------------------------------------------------
 local ScrollList = Instance.new("ScrollingFrame")
 ScrollList.Size = UDim2.new(1,-30,0,230)
 ScrollList.Position = UDim2.new(0,15,0,95)
@@ -320,9 +251,6 @@ local Layout = Instance.new("UIListLayout")
 Layout.Padding = UDim.new(0,8)
 Layout.Parent = ScrollList
 
-----------------------------------------------------
--- 1 FUNGSI ADAPTIF KONTROL TOMBOL & KUSTOMISASI
-----------------------------------------------------
 local function CreateScriptRow(rowType, name, configData)
 	local Row = Instance.new("Frame")
 	Row.Size = UDim2.new(1,-10,0,45)
@@ -430,9 +358,6 @@ local function CreateScriptRow(rowType, name, configData)
 	end
 end
 
-----------------------------------------------------
--- PENYUSUNAN DAFTAR MENU MENGGUNAKAN 1 FUNGSI DI ATAS
-----------------------------------------------------
 CreateScriptRow("Toggle", "Circle Lock-On", {
 	Callback = function(isOn)
 		circleEnabled = isOn
@@ -486,9 +411,6 @@ CreateScriptRow("Cycle", "Camera Target", {
 	end
 })
 
-----------------------------------------------------
--- LOGIKA UTAMA PENCARI TARGET (TERDEKAT DARI TENGAH LAYAR)
-----------------------------------------------------
 local function GetClosestTarget(maxDistance)
 	local closestTarget = nil
 	local shortestDistance = maxDistance or math.huge
@@ -496,20 +418,16 @@ local function GetClosestTarget(maxDistance)
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-			
 			if dontLockTeammate and player.Team == LocalPlayer.Team then
 				continue
 			end
-			
 			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 			if humanoid and humanoid.Health > 0 then
 				local rootPart = player.Character.HumanoidRootPart
 				local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
-
 				if onScreen then
 					local playerCoord = Vector2.new(screenPos.X, screenPos.Y)
 					local distance = (playerCoord - screenCenter).Magnitude
-
 					if distance < shortestDistance then
 						shortestDistance = distance
 						closestTarget = rootPart
@@ -521,13 +439,8 @@ local function GetClosestTarget(maxDistance)
 	return closestTarget
 end
 
-----------------------------------------------------
--- PERBAIKAN LOGIKA DETEKSI TOMBOL MOBILE & PC (FIX SWIPE LALU LOCK)
-----------------------------------------------------
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if not shootLockEnabled then return end
-
-	-- A. DETEKSI UNTUK PEMAIN PC (Tetap di InputBegan karena menggunakan keyboard)
 	if input.UserInputType == Enum.UserInputType.Keyboard then
 		local key = input.KeyCode
 		if key ~= Enum.KeyCode.W and key ~= Enum.KeyCode.A and key ~= Enum.KeyCode.S and key ~= Enum.KeyCode.D and key ~= Enum.KeyCode.Space and key ~= Enum.KeyCode.Unknown then
@@ -537,8 +450,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 				shootLockActiveUntil = os.clock() + 0.5
 			end
 		end
-
-	-- B. MOBILE: CATAT KOORDINAT AWAL SAAT JARI MENYENTUH LAYAR
 	elseif input.UserInputType == Enum.UserInputType.Touch then
 		activeTouches[input] = {
 			StartPosition = input.Position,
@@ -549,30 +460,18 @@ end)
 
 UserInputService.InputEnded:Connect(function(input, gameProcessed)
 	if not shootLockEnabled then return end
-
-	-- C. MOBILE ELEMEN PENENTU: Evaluasi sentuhan saat jari dilepas (InputEnded)
 	if input.UserInputType == Enum.UserInputType.Touch then
 		local touchData = activeTouches[input]
 		if touchData then
 			local startPos = touchData.StartPosition
 			local endPos = input.Position
 			local duration = os.clock() - touchData.StartTime
-			
-			-- Menghitung jarak pergeseran jari (Magnitude delta)
 			local distanceMoved = (Vector2.new(endPos.X, endPos.Y) - Vector2.new(startPos.X, startPos.Y)).Magnitude
-			
-			-- Hapus data dari memori untuk mencegah memory leak
 			activeTouches[input] = nil 
-
-			-- VALIDASI SEBAGAI KLIK/TAP: Durasi sangat singkat (< 0.25 dtk) & Jari hampir tidak bergeser (< 15 piksel)
 			if duration < 0.25 and distanceMoved < 15 then
 				local screenSize = Camera.ViewportSize
-
-				-- Filter area analog kiri dan tombol lompat kanan bawah
 				local isJumpZone = (startPos.X > screenSize.X * 0.65 and startPos.Y > screenSize.Y * 0.55)
 				local isMoveZone = (startPos.X < screenSize.X * 0.35 and startPos.Y > screenSize.Y * 0.5)
-
-				-- Jika klik terjadi di luar analog/lompat (Berarti menekan tombol skill/tembak/layar)
 				if not (isJumpZone or isMoveZone) then
 					local target = GetClosestTarget()
 					if target then
@@ -585,12 +484,8 @@ UserInputService.InputEnded:Connect(function(input, gameProcessed)
 	end
 end)
 
-----------------------------------------------------
--- EXECUTION LOOP (RENDER STEPPED KAMERA)
-----------------------------------------------------
 RunService.RenderStepped:Connect(function()
 	local finalTargetRoot = nil
-
 	if shootLockEnabled and os.clock() < shootLockActiveUntil and currentShootLockTarget and currentShootLockTarget.Parent then
 		local humanoid = currentShootLockTarget.Parent:FindFirstChildOfClass("Humanoid")
 		if humanoid and humanoid.Health > 0 then
@@ -603,7 +498,6 @@ RunService.RenderStepped:Connect(function()
 	if finalTargetRoot then
 		local character = finalTargetRoot.Parent
 		local cameraLookPosition = finalTargetRoot.Position
-
 		if targetBodyPart == "Head" then
 			local head = character:FindFirstChild("Head")
 			if head then cameraLookPosition = head.Position end
@@ -611,14 +505,10 @@ RunService.RenderStepped:Connect(function()
 			local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso")
 			if torso then cameraLookPosition = torso.Position end
 		end
-
 		Camera.CFrame = CFrame.lookAt(Camera.CFrame.Position, cameraLookPosition)
 	end
 end)
 
-----------------------------------------------------
--- EXECUTE BUTTON
-----------------------------------------------------
 local ExecuteAllBtn = Instance.new("TextButton")
 ExecuteAllBtn.Size = UDim2.new(0.7,0,0,40)
 ExecuteAllBtn.Position = UDim2.new(0,15,1,-50)
@@ -635,9 +525,6 @@ local ExecGradient = Instance.new("UIGradient")
 ExecGradient.Color = ColorSequence.new(Color3.fromRGB(0,100,220), Color3.fromRGB(0,150,255))
 ExecGradient.Parent = ExecuteAllBtn
 
-----------------------------------------------------
--- PASTEBIN BUTTON
-----------------------------------------------------
 local PastebinBtn = Instance.new("TextButton")
 PastebinBtn.Size = UDim2.new(0.23,0,0,40)
 PastebinBtn.Position = UDim2.new(0.74,0,1,-50)
@@ -654,9 +541,6 @@ local PasteStroke = Instance.new("UIStroke")
 PasteStroke.Color = Color3.fromRGB(0,130,220)
 PasteStroke.Parent = PastebinBtn
 
-----------------------------------------------------
--- ROUND TOGGLE BUTTON
-----------------------------------------------------
 local RoundToggleBtn = Instance.new("TextButton")
 RoundToggleBtn.Name = "RoundToggleBtn"
 RoundToggleBtn.Size = UDim2.new(0,60,0,60)
@@ -676,9 +560,6 @@ RoundStroke.Color = Color3.fromRGB(0,150,255)
 RoundStroke.Thickness = 2
 RoundStroke.Parent = RoundToggleBtn
 
-----------------------------------------------------
--- OPEN / CLOSE SYSTEM
-----------------------------------------------------
 CloseBtn.MouseButton1Click:Connect(function()
 	MainFrame.Visible = false
 	RoundToggleBtn.Visible = true
@@ -689,9 +570,6 @@ RoundToggleBtn.MouseButton1Click:Connect(function()
 	MainFrame.Visible = true
 end)
 
-----------------------------------------------------
--- DRAGGABLE SYSTEM
-----------------------------------------------------
 local function MakeDraggable(uiElement)
 	local dragging, dragInput, dragStart, startPos
 	uiElement.InputBegan:Connect(function(input)
@@ -720,8 +598,5 @@ end
 MakeDraggable(MainFrame)
 MakeDraggable(RoundToggleBtn)
 
-----------------------------------------------------
--- OPEN ANIMATION
-----------------------------------------------------
 MainFrame.Size = UDim2.new(0,0,0,0)
 TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Size = UDim2.new(0,550,0,400)}):Play()
