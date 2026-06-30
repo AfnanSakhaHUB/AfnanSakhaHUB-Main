@@ -394,6 +394,7 @@ local function SetupCharacter(character)
 		-- Transisi warna: Hijau (Sehat) -> Kuning -> Merah (Sekarat)
 		healthBarFill.BackgroundColor3 = Color3.fromRGB(255, 30, 30):Lerp(Color3.fromRGB(30, 255, 30), hpPercent)
 	end)
+end
 
 local function SetupPlayer(player)
 if player == LocalPlayer then return end
