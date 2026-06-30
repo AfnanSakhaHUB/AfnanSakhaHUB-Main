@@ -317,7 +317,6 @@ end
 -- MULTI-FUNCTION BILLBOARD ESP ENGINE
 
 local function SetupCharacter(character)
-local function SetupCharacter(character)
 	local player = Players:GetPlayerFromCharacter(character)
 	local humanoid = character:WaitForChild("Humanoid", 5)
 	local hrp = character:WaitForChild("HumanoidRootPart", 5)
