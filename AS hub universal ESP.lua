@@ -11,22 +11,18 @@ local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local Camera = workspace.CurrentCamera
 
-
----
-
+----------------------------------------------------
 -- AUTO CLEANUP
-
+----------------------------------------------------
 local oldUI1 = PlayerGui:FindFirstChild("AfnanSakhaLoadingScreen")
 if oldUI1 then oldUI1:Destroy() end
 
 local oldUI2 = PlayerGui:FindFirstChild("AfnanSakhaHubUI")
 if oldUI2 then oldUI2:Destroy() end
 
-
----
-
+----------------------------------------------------
 -- STATE CONFIGURATIONS & COLOR CONTROLS
-
+----------------------------------------------------
 local OutlineEnabled = false
 local BoxesEnabled = false
 local TracersEnabled = false
@@ -46,45 +42,43 @@ local TracerUseTeam = true
 local NameUseTeam = true
 
 local TeamColors = {
-Color3.fromRGB(0, 120, 255),   -- Tim 1: Biru
-Color3.fromRGB(255, 40, 40),   -- Tim 2: Merah
-Color3.fromRGB(40, 255, 40),   -- Tim 3: Hijau
-Color3.fromRGB(255, 230, 0),   -- Tim 4: Kuning
-Color3.fromRGB(180, 40, 255),  -- Tim 5: Ungu
-Color3.fromRGB(255, 255, 255), -- Tim 6: Putih
-Color3.fromRGB(25, 25, 25),    -- Tim 7: Hitam (FIXED: Typo 25' dibuang)
+	Color3.fromRGB(0, 120, 255),   -- Tim 1: Biru
+	Color3.fromRGB(255, 40, 40),   -- Tim 2: Merah
+	Color3.fromRGB(40, 255, 40),   -- Tim 3: Hijau
+	Color3.fromRGB(255, 230, 0),   -- Tim 4: Kuning
+	Color3.fromRGB(180, 40, 255),  -- Tim 5: Ungu
+	Color3.fromRGB(255, 255, 255), -- Tim 6: Putih
+	Color3.fromRGB(25, 25, 25),    -- Tim 7: Hitam
 }
 
 local function getPlayerTeamColor(player)
-if player.Team then
-local currentTeams = Teams:GetTeams()
-table.sort(currentTeams, function(a, b) return a.Name < b.Name end)
-local idx = table.find(currentTeams, player.Team)
-if idx then
-return TeamColors[((idx - 1) % #TeamColors) + 1]
-end
-end
-return Color3.fromRGB(170, 170, 170) -- Default color
+	if player.Team then
+		local currentTeams = Teams:GetTeams()
+		table.sort(currentTeams, function(a, b) return a.Name < b.Name end)
+		local idx = table.find(currentTeams, player.Team)
+		if idx then
+			return TeamColors[((idx - 1) % #TeamColors) + 1]
+		end
+	end
+	return Color3.fromRGB(170, 170, 170) -- Default color
 end
 
 local function GetActiveColor(player, feature)
-if feature == "Outline" then
-return OutlineUseTeam and getPlayerTeamColor(player) or OutlineColor
-elseif feature == "Box" then
-return BoxUseTeam and getPlayerTeamColor(player) or BoxColor
-elseif feature == "Tracer" then
-return TracerUseTeam and getPlayerTeamColor(player) or TracerColor
-elseif feature == "Name" then
-return NameUseTeam and getPlayerTeamColor(player) or NameColor
+	if feature == "Outline" then
+		return OutlineUseTeam and getPlayerTeamColor(player) or OutlineColor
+	elseif feature == "Box" then
+		return BoxUseTeam and getPlayerTeamColor(player) or BoxColor
+	elseif feature == "Tracer" then
+		return TracerUseTeam and getPlayerTeamColor(player) or TracerColor
+	elseif feature == "Name" then
+		return NameUseTeam and getPlayerTeamColor(player) or NameColor
+	end
+	return Color3.fromRGB(255,255,255)
 end
-return Color3.fromRGB(255,255,255)
-end
 
-
----
-
+----------------------------------------------------
 -- LOADING SCREEN
-
+----------------------------------------------------
 local LoadingGui = Instance.new("ScreenGui")
 LoadingGui.Name = "AfnanSakhaLoadingScreen"
 LoadingGui.ResetOnSpawn = false
@@ -96,12 +90,13 @@ local Background = Instance.new("Frame")
 Background.Size = UDim2.new(1,0,1,0)
 Background.BackgroundColor3 = Color3.fromRGB(10,15,30)
 Background.BorderSizePixel = 0
+Background.Parent = Background -- Fixed target reference
 Background.Parent = LoadingGui
 
 local UIGradient = Instance.new("UIGradient")
 UIGradient.Color = ColorSequence.new{
-ColorSequenceKeypoint.new(0, Color3.fromRGB(10,20,45)),
-ColorSequenceKeypoint.new(1, Color3.fromRGB(5,10,25))
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(10,20,45)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(5,10,25))
 }
 UIGradient.Rotation = 45
 UIGradient.Parent = Background
@@ -146,8 +141,8 @@ Instance.new("UICorner", BarFill).CornerRadius = UDim.new(0.5,0)
 
 local FillGradient = Instance.new("UIGradient")
 FillGradient.Color = ColorSequence.new{
-ColorSequenceKeypoint.new(0, Color3.fromRGB(0,100,220)),
-ColorSequenceKeypoint.new(1, Color3.fromRGB(0,230,255))
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0,100,220)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(0,230,255))
 }
 FillGradient.Parent = BarFill
 
@@ -167,10 +162,10 @@ local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection
 
 task.wait(0.5)
 for i = 1, totalAssets do
-local progress = i / totalAssets
-TweenService:Create(BarFill, tweenInfo, {Size = UDim2.new(progress,0,1,0)}):Play()
-StatusLabel.Text = i .. "/" .. totalAssets .. " assets loaded"
-if i < 15 or i > 85 then task.wait(0.01) elseif i == 50 or i == 70 then task.wait(0.15) else task.wait(0.02) end
+	local progress = i / totalAssets
+	TweenService:Create(BarFill, tweenInfo, {Size = UDim2.new(progress,0,1,0)}):Play()
+	StatusLabel.Text = i .. "/" .. totalAssets .. " assets loaded"
+	if i < 15 or i > 85 then task.wait(0.01) elseif i == 50 or i == 70 then task.wait(0.15) else task.wait(0.02) end
 end
 StatusLabel.Text = "Selesai!"
 task.wait(0.2)
@@ -178,20 +173,18 @@ task.wait(0.2)
 local fadeTweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 TweenService:Create(Background, fadeTweenInfo, {BackgroundTransparency = 1}):Play()
 for _, child in ipairs(MainContainer:GetChildren()) do
-if child:IsA("TextLabel") then TweenService:Create(child, fadeTweenInfo, {TextTransparency = 1}):Play()
-elseif child:IsA("Frame") then TweenService:Create(child, fadeTweenInfo, {BackgroundTransparency = 1}):Play()
-local stroke = child:FindFirstChildOfClass("UIStroke")
-if stroke then TweenService:Create(stroke, fadeTweenInfo, {Transparency = 1}):Play() end
-end
+	if child:IsA("TextLabel") then TweenService:Create(child, fadeTweenInfo, {TextTransparency = 1}):Play()
+	elseif child:IsA("Frame") then TweenService:Create(child, fadeTweenInfo, {BackgroundTransparency = 1}):Play()
+		local stroke = child:FindFirstChildOfClass("UIStroke")
+		if stroke then TweenService:Create(stroke, fadeTweenInfo, {Transparency = 1}):Play() end
+	end
 end
 task.wait(0.4)
 LoadingGui:Destroy()
 
-
----
-
+----------------------------------------------------
 -- MAIN GUI BUILDER
-
+----------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AfnanSakhaHubUI"
 ScreenGui.ResetOnSpawn = false
@@ -247,19 +240,19 @@ TabContainer.BackgroundTransparency = 1
 TabContainer.Parent = MainFrame
 
 local function CreateTab(name, posIdx)
-local Tab = Instance.new("TextButton")
-Tab.Size = UDim2.new(0.31,0,1,0)
-Tab.Position = UDim2.new((posIdx - 1) * 0.34,0,0,0)
-Tab.BackgroundColor3 = posIdx == 1 and Color3.fromRGB(15,45,80) or Color3.fromRGB(15,30,50)
-Tab.Text = name
-Tab.TextColor3 = posIdx == 1 and Color3.fromRGB(0,230,255) or Color3.fromRGB(150,180,210)
-Tab.TextSize = 14
-Tab.Font = Enum.Font.GothamBold
-Tab.Parent = TabContainer
-Instance.new("UICorner", Tab).CornerRadius = UDim.new(0,6)
-local Stroke = Instance.new("UIStroke")
-Stroke.Color = posIdx == 1 and Color3.fromRGB(0,180,255) or Color3.fromRGB(0,90,150)
-Stroke.Parent = Tab
+	local Tab = Instance.new("TextButton")
+	Tab.Size = UDim2.new(0.31,0,1,0)
+	Tab.Position = UDim2.new((posIdx - 1) * 0.34,0,0,0)
+	Tab.BackgroundColor3 = posIdx == 1 and Color3.fromRGB(15,45,80) or Color3.fromRGB(15,30,50)
+	Tab.Text = name
+	Tab.TextColor3 = posIdx == 1 and Color3.fromRGB(0,230,255) or Color3.fromRGB(150,180,210)
+	Tab.TextSize = 14
+	Tab.Font = Enum.Font.GothamBold
+	Tab.Parent = TabContainer
+	Instance.new("UICorner", Tab).CornerRadius = UDim.new(0,6)
+	local Stroke = Instance.new("UIStroke")
+	Stroke.Color = posIdx == 1 and Color3.fromRGB(0,180,255) or Color3.fromRGB(0,90,150)
+	Stroke.Parent = Tab
 end
 CreateTab("SCRIPTS",1)
 CreateTab("SETTINGS",2)
@@ -282,40 +275,36 @@ local TracerFolder = Instance.new("Folder", ScreenGui)
 TracerFolder.Name = "TracerFolder"
 local TracerFrames = {}
 
-
----
-
+----------------------------------------------------
 -- SYSTEM LOGIC: OUTLINES CONTROL
-
+----------------------------------------------------
 local function UpdatePlayerOutlines()
-for _, player in ipairs(Players:GetPlayers()) do
-if player ~= LocalPlayer and player.Character then
-local existing = player.Character:FindFirstChild("PlayerOutline")
-if OutlineEnabled then
-local calculatedColor = GetActiveColor(player, "Outline")
-if not existing then
-local highlight = Instance.new("Highlight")
-highlight.Name = "PlayerOutline"
-highlight.FillTransparency = 1
-highlight.OutlineTransparency = 0
-highlight.OutlineColor = calculatedColor
-highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-highlight.Parent = player.Character
-else
-existing.OutlineColor = calculatedColor
-end
-else
-if existing then existing:Destroy() end
-end
-end
-end
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer and player.Character then
+			local existing = player.Character:FindFirstChild("PlayerOutline")
+			if OutlineEnabled then
+				local calculatedColor = GetActiveColor(player, "Outline")
+				if not existing then
+					local highlight = Instance.new("Highlight")
+					highlight.Name = "PlayerOutline"
+					highlight.FillTransparency = 1
+					highlight.OutlineTransparency = 0
+					highlight.OutlineColor = calculatedColor
+					highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+					highlight.Parent = player.Character
+				else
+					existing.OutlineColor = calculatedColor
+				end
+			else
+				if existing then existing:Destroy() end
+			end
+		end
+	end
 end
 
-
----
-
--- MULTI-FUNCTION BILLBOARD ESP ENGINE
-
+----------------------------------------------------
+-- MULTI-FUNCTION BILLBOARD ESP ENGINE (IRONCLAD FIX)
+----------------------------------------------------
 local function SetupCharacter(character)
 	local player = Players:GetPlayerFromCharacter(character)
 	local humanoid = character:WaitForChild("Humanoid", 5)
@@ -323,19 +312,20 @@ local function SetupCharacter(character)
 	
 	if not humanoid or not hrp or not player or player == LocalPlayer then return end
 
-	-- Bersihkan jika ada sisa ESP lama
-	local oldBox = hrp:FindFirstChild("PlayerBoxESP")
+	-- FIXED: Cari pembersihan sisa ESP lama langsung di dalam ScreenGui induk
+	local oldBox = ScreenGui:FindFirstChild(player.Name .. "_ESP")
 	if oldBox then oldBox:Destroy() end
 
 	-- Master Billboard Gui
 	local boxBillboard = Instance.new("BillboardGui")
-	boxBillboard.Name = "PlayerBoxESP"
+	boxBillboard.Name = player.Name .. "_ESP"
 	boxBillboard.Adornee = hrp
 	boxBillboard.Size = UDim2.new(4, 0, 5, 0)
 	boxBillboard.StudsOffset = Vector3.new(0, 0.5, 0)
 	boxBillboard.AlwaysOnTop = true
+	boxBillboard.LightInfluence = 0 -- FIXED: Dipaksa ke 0 agar selalu terang benderang anti map gelap!
 	boxBillboard.Enabled = (BoxesEnabled or NameESPEnabled or HealthESPEnabled)
-	boxBillboard.Parent = hrp
+	boxBillboard.Parent = ScreenGui -- FIXED: Di-parent ke ScreenGui Hub agar ANTI-HAPUS oleh sistem game!
 
 	-- 1. Bounding Box Frame
 	local boxFrame = Instance.new("Frame")
@@ -350,38 +340,36 @@ local function SetupCharacter(character)
 	boxStroke.Thickness = 2
 	boxStroke.Parent = boxFrame
 
-	-- 2. Name ESP Frame (SUSUNAN & SCALE MILIKMU)  
+	-- 2. Name ESP Frame (SCALE MILIKMU + FIXED CLIP BAYANGAN)  
 	local nameLabel = Instance.new("TextLabel")  
 	nameLabel.Name = "NameLabel"  
-	nameLabel.Size = UDim2.new(1, 0, 0.1, 0)       -- Menggunakan Scale  
-	nameLabel.Position = UDim2.new(0, 0, -0.12, 0)  -- Menggunakan Scale agar pas di atas kepala  
+	nameLabel.Size = UDim2.new(1, 0, 0.12, 0)       
+	nameLabel.Position = UDim2.new(0, 0, -0.15, 0)  
 	nameLabel.BackgroundTransparency = 1  
 	nameLabel.Text = player.Name  
 	nameLabel.TextColor3 = GetActiveColor(player, "Name")  
-	nameLabel.TextSize = 13  
 	nameLabel.Font = Enum.Font.GothamBold  
-	nameLabel.TextXAlignment = Enum.TextXAlignment.Center -- Diubah ke Center agar lebih rapi  
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Center 
 	nameLabel.TextStrokeTransparency = 0  
+	nameLabel.TextScaled = true -- FIXED: Wajib aktif agar teks tidak hilang dari jarak jauh
 	nameLabel.Visible = NameESPEnabled  
 	nameLabel.Parent = boxBillboard  
 
-	-- 3. Side Vertical Health ESP Bar Background (SUSUNAN & SCALE MILIKMU)  
+	-- 3. Side Vertical Health ESP Bar Background  
 	local healthBarBG = Instance.new("Frame")  
 	healthBarBG.Name = "HealthBarBG"  
-	healthBarBG.Size = UDim2.new(0.06, 0, 1, 0)      -- Menggunakan Scale (6% dari lebar kotak)  
-	healthBarBG.Position = UDim2.new(-0.09, 0, 0, 0)  -- Menggunakan Scale (Digeser rapi ke kiri kotak)  
+	healthBarBG.Size = UDim2.new(0.06, 0, 1, 0)      
+	healthBarBG.Position = UDim2.new(-0.09, 0, 0, 0)  
 	healthBarBG.BackgroundColor3 = Color3.fromRGB(30, 30, 30)  
 	healthBarBG.BorderSizePixel = 0  
 	healthBarBG.Visible = HealthESPEnabled  
 	healthBarBG.Parent = boxBillboard
 
-	-- ========================================================
-	-- ISI BAR DARAH (Wajib ada di dalam healthBarBG agar warna darahnya muncul)
-	-- ========================================================
+	-- ISI BAR DARAH REALTIME
 	local healthBarFill = Instance.new("Frame")
 	healthBarFill.Name = "HealthBarFill"
 	healthBarFill.Size = UDim2.new(1, 0, math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1), 0)
-	healthBarFill.AnchorPoint = Vector2.new(0, 1) -- Pengurangan dari atas ke bawah
+	healthBarFill.AnchorPoint = Vector2.new(0, 1) 
 	healthBarFill.Position = UDim2.new(0, 0, 1, 0)
 	healthBarFill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
 	healthBarFill.BorderSizePixel = 0
@@ -391,38 +379,37 @@ local function SetupCharacter(character)
 	humanoid.HealthChanged:Connect(function()
 		local hpPercent = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
 		healthBarFill.Size = UDim2.new(1, 0, hpPercent, 0)
-		-- Transisi warna: Hijau (Sehat) -> Kuning -> Merah (Sekarat)
 		healthBarFill.BackgroundColor3 = Color3.fromRGB(255, 30, 30):Lerp(Color3.fromRGB(30, 255, 30), hpPercent)
 	end)
 end
 
 local function SetupPlayer(player)
-if player == LocalPlayer then return end
-player.CharacterAdded:Connect(function(character)
-task.wait(0.4)
-if OutlineEnabled then UpdatePlayerOutlines() end
-task.spawn(SetupCharacter, character)
-end)
-if player.Character then
-task.spawn(SetupCharacter, player.Character)
-if OutlineEnabled then UpdatePlayerOutlines() end
-end
+	if player == LocalPlayer then return end
+	player.CharacterAdded:Connect(function(character)
+		task.wait(0.4)
+		if OutlineEnabled then UpdatePlayerOutlines() end
+		task.spawn(SetupCharacter, character)
+	end)
+	if player.Character then
+		task.spawn(SetupCharacter, player.Character)
+		if OutlineEnabled then UpdatePlayerOutlines() end
+	end
 end
 
 task.spawn(function()
-for _, player in ipairs(Players:GetPlayers()) do SetupPlayer(player) end
+	for _, player in ipairs(Players:GetPlayers()) do SetupPlayer(player) end
 end)
 
 Players.PlayerAdded:Connect(SetupPlayer)
 Players.PlayerRemoving:Connect(function(player)
-if TracerFrames[player] then TracerFrames[player]:Destroy() TracerFrames[player] = nil end
+	if TracerFrames[player] then TracerFrames[player]:Destroy() TracerFrames[player] = nil end
+	local oldBox = ScreenGui:FindFirstChild(player.Name .. "_ESP")
+	if oldBox then oldBox:Destroy() end
 end)
 
-
----
-
--- MAIN CORE RENDER LOOP
-
+----------------------------------------------------
+-- MAIN CORE RENDER LOOP (FORCED ENGINE VALUE)
+----------------------------------------------------
 RunService.RenderStepped:Connect(function()
 	Camera = workspace.CurrentCamera
 	local viewportSize = Camera.ViewportSize
@@ -435,19 +422,19 @@ RunService.RenderStepped:Connect(function()
 			local humanoid = character and character:FindFirstChild("Humanoid")
 
 			--------------------------------------------------
-			-- BILLBOARD ESP UPDATE
+			-- BILLBOARD ESP UPDATE (FIXED PATH SEARH)
 			--------------------------------------------------
 			if hrp and humanoid then
-				local boxESP = hrp:FindFirstChild("PlayerBoxESP")
+				local boxESP = ScreenGui:FindFirstChild(player.Name .. "_ESP")
 
 				if boxESP then
+					boxESP.Adornee = hrp -- Kunci posisi target real-time
 					boxESP.Enabled = (BoxesEnabled or NameESPEnabled or HealthESPEnabled)
 
 					-- BOX
 					local boxFrame = boxESP:FindFirstChild("BoxFrame")
 					if boxFrame then
 						boxFrame.Visible = BoxesEnabled
-
 						local stroke = boxFrame:FindFirstChildOfClass("UIStroke")
 						if stroke then
 							stroke.Color = GetActiveColor(player, "Box")
@@ -470,16 +457,8 @@ RunService.RenderStepped:Connect(function()
 						local fill = healthBG:FindFirstChild("HealthBarFill")
 						if fill then
 							local hp = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
-
-							fill.Size = UDim2.new(1,0,hp,0)
-							fill.Position = UDim2.new(0,0,1,0)
-							fill.AnchorPoint = Vector2.new(0,1)
-
-							fill.BackgroundColor3 =
-								Color3.fromRGB(255,30,30):Lerp(
-									Color3.fromRGB(30,255,30),
-									hp
-								)
+							fill.Size = UDim2.new(1, 0, hp, 0)
+							fill.BackgroundColor3 = Color3.fromRGB(255,30,30):Lerp(Color3.fromRGB(30,255,30), hp)
 						end
 					end
 				end
@@ -490,7 +469,6 @@ RunService.RenderStepped:Connect(function()
 			--------------------------------------------------
 			if TracersEnabled and hrp and humanoid and humanoid.Health > 0 then
 				local screenPos = Camera:WorldToViewportPoint(hrp.Position)
-
 				local padding = 15
 				local endPos = Vector2.new(
 					math.clamp(screenPos.X, padding, viewportSize.X - padding),
@@ -498,7 +476,6 @@ RunService.RenderStepped:Connect(function()
 				)
 
 				local frame = TracerFrames[player]
-
 				if not frame then
 					frame = Instance.new("Frame")
 					frame.BorderSizePixel = 0
@@ -508,18 +485,9 @@ RunService.RenderStepped:Connect(function()
 				end
 
 				local distance = (endPos - startPos).Magnitude
-
 				frame.Size = UDim2.new(0,distance,0,2)
-				frame.Position = UDim2.new(
-					0,(startPos.X + endPos.X)/2,
-					0,(startPos.Y + endPos.Y)/2
-				)
-
-				frame.Rotation = math.deg(math.atan2(
-					endPos.Y - startPos.Y,
-					endPos.X - startPos.X
-				))
-
+				frame.Position = UDim2.new(0,(startPos.X + endPos.X)/2, 0,(startPos.Y + endPos.Y)/2)
+				frame.Rotation = math.deg(math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X))
 				frame.BackgroundColor3 = GetActiveColor(player,"Tracer")
 				frame.Visible = true
 			else
@@ -541,158 +509,154 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
----
-
+----------------------------------------------------
 -- COMPONENT: DYNAMIC DROPDOWN INTERFACE ROW SYSTEM
-
+----------------------------------------------------
 local function CreateScriptRow(name, defaultState)
-local Row = Instance.new("Frame")
-Row.Size = UDim2.new(1,-10,0,45)
-Row.BackgroundColor3 = Color3.fromRGB(18,32,55)
-Row.ClipsDescendants = true
-Row.Parent = ScrollList
+	local Row = Instance.new("Frame")
+	Row.Size = UDim2.new(1,-10,0,45)
+	Row.BackgroundColor3 = Color3.fromRGB(18,32,55)
+	Row.ClipsDescendants = true
+	Row.Parent = ScrollList
 
-Instance.new("UICorner", Row).CornerRadius = UDim.new(0,8)  
+	Instance.new("UICorner", Row).CornerRadius = UDim.new(0,8)  
 
-local Stroke = Instance.new("UIStroke")  
-Stroke.Color = Color3.fromRGB(0,100,180)  
-Stroke.Parent = Row  
+	local Stroke = Instance.new("UIStroke")  
+	Stroke.Color = Color3.fromRGB(0,100,180)  
+	Stroke.Parent = Row  
 
-local Label = Instance.new("TextLabel")  
-Label.Size = UDim2.new(0.7,0,0,45)  
-Label.Position = UDim2.new(0,15,0,0)  
-Label.BackgroundTransparency = 1  
-Label.Text = name .. (defaultState and " (ON)" or " (OFF)")  
-Label.TextColor3 = Color3.fromRGB(240,245,255)  
-Label.TextSize = 15  
-Label.Font = Enum.Font.GothamMedium  
-Label.TextXAlignment = Enum.TextXAlignment.Left  
-Label.Parent = Row  
+	local Label = Instance.new("TextLabel")  
+	Label.Size = UDim2.new(0.7,0,0,45)  
+	Label.Position = UDim2.new(0,15,0,0)  
+	Label.BackgroundTransparency = 1  
+	Label.Text = name .. (defaultState and " (ON)" or " (OFF)")  
+	Label.TextColor3 = Color3.fromRGB(240,245,255)  
+	Label.TextSize = 15  
+	Label.Font = Enum.Font.GothamMedium  
+	Label.TextXAlignment = Enum.TextXAlignment.Left  
+	Label.Parent = Row  
 
-local ToggleBtn = Instance.new("TextButton")  
-ToggleBtn.Size = UDim2.new(0,55,0,26)  
-ToggleBtn.Position = UDim2.new(1,-70,0,9)  
-ToggleBtn.BackgroundColor3 = defaultState and Color3.fromRGB(0,180,255) or Color3.fromRGB(35,50,75)  
-ToggleBtn.Text = ""  
-ToggleBtn.Parent = Row  
-Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0.5,0)  
+	local ToggleBtn = Instance.new("TextButton")  
+	ToggleBtn.Size = UDim2.new(0,55,0,26)  
+	ToggleBtn.Position = UDim2.new(1,-70,0,9)  
+	ToggleBtn.BackgroundColor3 = defaultState and Color3.fromRGB(0,180,255) or Color3.fromRGB(35,50,75)  
+	ToggleBtn.Text = ""  
+	ToggleBtn.Parent = Row  
+	Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0.5,0)  
 
-local Circle = Instance.new("Frame")  
-Circle.Size = UDim2.new(0,20,0,20)  
-Circle.Position = defaultState and UDim2.new(1,-23,0.5,-10) or UDim2.new(0,3,0.5,-10)  
-Circle.BackgroundColor3 = Color3.fromRGB(255,255,255)  
-Circle.Parent = ToggleBtn  
-Instance.new("UICorner", Circle).CornerRadius = UDim.new(0.5,0)  
+	local Circle = Instance.new("Frame")  
+	Circle.Size = UDim2.new(0,20,0,20)  
+	Circle.Position = defaultStateand UDim2.new(1,-23,0.5,-10) or UDim2.new(0,3,0.5,-10)  
+	Circle.BackgroundColor3 = Color3.fromRGB(255,255,255)  
+	Circle.Parent = ToggleBtn  
+	Instance.new("UICorner", Circle).CornerRadius = UDim.new(0.5,0)  
 
--- COLOR CONTAINER (Hanya dibuat untuk modul yang membutuhkan modifikasi warna kustom)  
-local ColorContainer  
-if name ~= "Side Health ESP" then  
-	ColorContainer = Instance.new("Frame")  
-	ColorContainer.Size = UDim2.new(1, 0, 0, 40)  
-	ColorContainer.Position = UDim2.new(0, 0, 0, 45)  
-	ColorContainer.BackgroundTransparency = 1  
-	ColorContainer.Visible = defaultState  
-	ColorContainer.Parent = Row  
+	local ColorContainer  
+	if name ~= "Side Health ESP" then  
+		ColorContainer = Instance.new("Frame")  
+		ColorContainer.Size = UDim2.new(1, 0, 0, 40)  
+		ColorContainer.Position = UDim2.new(0, 0, 0, 45)  
+		ColorContainer.BackgroundTransparency = 1  
+		ColorContainer.Visible = defaultState  
+		ColorContainer.Parent = Row  
 
-	local ColorLabel = Instance.new("TextLabel")  
-	ColorLabel.Size = UDim2.new(0, 90, 1, 0)  
-	ColorLabel.Position = UDim2.new(0, 15, 0, 0)  
-	ColorLabel.BackgroundTransparency = 1  
-	ColorLabel.Text = "Warna ESP:"  
-	ColorLabel.TextColor3 = Color3.fromRGB(150, 180, 210)  
-	ColorLabel.TextSize = 13  
-	ColorLabel.Font = Enum.Font.GothamMedium  
-	ColorLabel.TextXAlignment = Enum.TextXAlignment.Left  
-	ColorLabel.Parent = ColorContainer  
+		local ColorLabel = Instance.new("TextLabel")  
+		ColorLabel.Size = UDim2.new(0, 90, 1, 0)  
+		ColorLabel.Position = UDim2.new(0, 15, 0, 0)  
+		ColorLabel.BackgroundTransparency = 1  
+		ColorLabel.Text = "Warna ESP:"  
+		ColorLabel.TextColor3 = Color3.fromRGB(150, 180, 210)  
+		ColorLabel.TextSize = 13  
+		ColorLabel.Font = Enum.Font.GothamMedium  
+		ColorLabel.TextXAlignment = Enum.TextXAlignment.Left  
+		ColorLabel.Parent = ColorContainer  
 
-	local ColorsFrame = Instance.new("Frame")  
-	ColorsFrame.Size = UDim2.new(1, -115, 1, 0)  
-	ColorsFrame.Position = UDim2.new(0, 105, 0, 0)  
-	ColorsFrame.BackgroundTransparency = 1  
-	ColorsFrame.Parent = ColorContainer  
+		local ColorsFrame = Instance.new("Frame")  
+		ColorsFrame.Size = UDim2.new(1, -115, 1, 0)  
+		ColorsFrame.Position = UDim2.new(0, 105, 0, 0)  
+		ColorsFrame.BackgroundTransparency = 1  
+		ColorsFrame.Parent = ColorContainer  
 
-	local ColorsLayout = Instance.new("UIListLayout")  
-	ColorsLayout.FillDirection = Enum.FillDirection.Horizontal  
-	ColorsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left  
-	ColorsLayout.VerticalAlignment = Enum.VerticalAlignment.Center  
-	ColorsLayout.Padding = UDim.new(0, 6)  
-	ColorsLayout.Parent = ColorsFrame  
+		local ColorsLayout = Instance.new("UIListLayout")  
+		ColorsLayout.FillDirection = Enum.FillDirection.Horizontal  
+		ColorsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left  
+		ColorsLayout.VerticalAlignment = Enum.VerticalAlignment.Center  
+		ColorsLayout.Padding = UDim.new(0, 6)  
+		ColorsLayout.Parent = ColorsFrame  
 
-	-- Tombol Khusus "TEAM" untuk mode penyesuaian tim dinamis  
-	local TeamToggleBtn = Instance.new("TextButton")  
-	TeamToggleBtn.Size = UDim2.new(0, 48, 0, 22)  
-	TeamToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)  
-	TeamToggleBtn.Text = "TEAM"  
-	TeamToggleBtn.TextColor3 = Color3.fromRGB(255,255,255)  
-	TeamToggleBtn.Font = Enum.Font.GothamBold  
-	TeamToggleBtn.TextSize = 10  
-	TeamToggleBtn.Parent = ColorsFrame  
-	Instance.new("UICorner", TeamToggleBtn).CornerRadius = UDim.new(0, 4)  
+		local TeamToggleBtn = Instance.new("TextButton")  
+		TeamToggleBtn.Size = UDim2.new(0, 48, 0, 22)  
+		TeamToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)  
+		TeamToggleBtn.Text = "TEAM"  
+		TeamToggleBtn.TextColor3 = Color3.fromRGB(255,255,255)  
+		TeamToggleBtn.Font = Enum.Font.GothamBold  
+		TeamToggleBtn.TextSize = 10  
+		TeamToggleBtn.Parent = ColorsFrame  
+		Instance.new("UICorner", TeamToggleBtn).CornerRadius = UDim.new(0, 4)  
 
-	TeamToggleBtn.MouseButton1Click:Connect(function()  
-		if name == "Player Outline" then OutlineUseTeam = true  
-		elseif name == "Team Box ESP" then BoxUseTeam = true  
-		elseif name == "Team Tracer ESP" then TracerUseTeam = true  
-		elseif name == "Team Name ESP" then NameUseTeam = true end  
-		if OutlineEnabled then UpdatePlayerOutlines() end  
-	end)  
-
-	local colorPresets = {  
-		Color3.fromRGB(0, 230, 255),   -- Cyan  
-		Color3.fromRGB(255, 30, 30),   -- Merah  
-		Color3.fromRGB(30, 255, 30),   -- Hijau  
-		Color3.fromRGB(255, 255, 30),  -- Kuning  
-		Color3.fromRGB(255, 255, 255)  -- Putih  
-	}  
-
-	for _, color in ipairs(colorPresets) do  
-		local ColorBtn = Instance.new("TextButton")  
-		ColorBtn.Size = UDim2.new(0, 22, 0, 22)  
-		ColorBtn.BackgroundColor3 = color  
-		ColorBtn.Text = ""  
-		ColorBtn.Parent = ColorsFrame  
-		Instance.new("UICorner", ColorBtn).CornerRadius = UDim.new(1, 0)  
-
-		ColorBtn.MouseButton1Click:Connect(function()  
-			if name == "Player Outline" then OutlineUseTeam = false OutlineColor = color  
-			elseif name == "Team Box ESP" then BoxUseTeam = false BoxColor = color  
-			elseif name == "Team Tracer ESP" then TracerUseTeam = false TracerColor = color  
-			elseif name == "Team Name ESP" then NameUseTeam = false NameColor = color end  
-			if OutlineEnabled then UpdatePlayerOutlines() end  
+		TeamToggleBtn.MouseButton1Click:Connect(function()  
+			if name == "Player Outline" then OutlineUseTeam = true  
+			elseif name == "Team Box ESP" then BoxUseTeam = true  
+			elseif name == "Team Tracer ESP" then TracerUseTeam = true  
+			elseif name == "Team Name ESP" then NameUseTeam = true end  
+			if OutlineEnabled then UpdatePlayerOutlines() end
 		end)  
+
+		local colorPresets = {  
+			Color3.fromRGB(0, 230, 255),   
+			Color3.fromRGB(255, 30, 30),   
+			Color3.fromRGB(30, 255, 30),   
+			Color3.fromRGB(255, 255, 30),  
+			Color3.fromRGB(255, 255, 255)  
+		}  
+
+		for _, color in ipairs(colorPresets) do  
+			local ColorBtn = Instance.new("TextButton")  
+			ColorBtn.Size = UDim2.new(0, 22, 0, 22)  
+			ColorBtn.BackgroundColor3 = color  
+			ColorBtn.Text = ""  
+			ColorBtn.Parent = ColorsFrame  
+			Instance.new("UICorner", ColorBtn).CornerRadius = UDim.new(1, 0)  
+
+			ColorBtn.MouseButton1Click:Connect(function()  
+				if name == "Player Outline" then OutlineUseTeam = false OutlineColor = color  
+				elseif name == "Team Box ESP" then BoxUseTeam = false BoxColor = color  
+				elseif name == "Team Tracer ESP" then TracerUseTeam = false TracerColor = color  
+				elseif name == "Team Name ESP" then NameUseTeam = false NameColor = color end  
+				if OutlineEnabled then UpdatePlayerOutlines() end  
+			end)  
+		end  
 	end  
-end  
 
-local isOn = defaultState  
-ToggleBtn.MouseButton1Click:Connect(function()  
-	isOn = not isOn  
-	Label.Text = name .. (isOn and " (ON)" or " (OFF)")  
+	local isOn = defaultState  
+	ToggleBtn.MouseButton1Click:Connect(function()  
+		isOn = not isOn  
+		Label.Text = name .. (isOn and " (ON)" or " (OFF)")  
 
-	local targetPos = isOn and UDim2.new(1,-23,0.5,-10) or UDim2.new(0,3,0.5,-10)  
-	local targetColor = isOn and Color3.fromRGB(0,180,255) or Color3.fromRGB(35,50,75)  
+		local targetPos = isOn and UDim2.new(1,-23,0.5,-10) or UDim2.new(0,3,0.5,-10)  
+		local targetColor = isOn and Color3.fromRGB(0,180,255) or Color3.fromRGB(35,50,75)  
 
-	TweenService:Create(Circle, TweenInfo.new(0.2), {Position = targetPos}):Play()  
-	TweenService:Create(ToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()  
+		TweenService:Create(Circle, TweenInfo.new(0.2), {Position = targetPos}):Play()  
+		TweenService:Create(ToggleBtn, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()  
 
-	local targetRowHeight = (isOn and name ~= "Side Health ESP") and 85 or 45  
-	TweenService:Create(Row, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, -10, 0, targetRowHeight)}):Play()  
-	if ColorContainer then ColorContainer.Visible = isOn end  
+		local targetRowHeight = (isOn and name ~= "Side Health ESP") and 85 or 45  
+		TweenService:Create(Row, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, -10, 0, targetRowHeight)}):Play()  
+		if ColorContainer then ColorContainer.Visible = isOn end  
 
-	if name == "Player Outline" then  
-		OutlineEnabled = isOn  
-		UpdatePlayerOutlines()  
-	elseif name == "Team Box ESP" then  
-		BoxesEnabled = isOn  
-	elseif name == "Team Tracer ESP" then  
-		TracersEnabled = isOn  
-		if not isOn then for _, f in pairs(TracerFrames) do f.Visible = false end end  
-	elseif name == "Team Name ESP" then  
-		NameESPEnabled = isOn  
-	elseif name == "Side Health ESP" then  
-		HealthESPEnabled = isOn  
-	end  
-end)
-
+		if name == "Player Outline" then  
+			OutlineEnabled = isOn  
+			UpdatePlayerOutlines()  
+		elseif name == "Team Box ESP" then  
+			BoxesEnabled = isOn  
+		elseif name == "Team Tracer ESP" then  
+			TracersEnabled = isOn  
+			if not isOn then for _, f in pairs(TracerFrames) do f.Visible = false end end  
+		elseif name == "Team Name ESP" then  
+			NameESPEnabled = isOn  
+		elseif name == "Side Health ESP" then  
+			HealthESPEnabled = isOn  
+		end  
+	end)
 end
 
 CreateScriptRow("Player Outline", false)
@@ -701,11 +665,9 @@ CreateScriptRow("Team Tracer ESP", false)
 CreateScriptRow("Team Name ESP", false)
 CreateScriptRow("Side Health ESP", false)
 
-
----
-
+----------------------------------------------------
 -- INTERFACE CORE ACTIONS & DRAG REGISTRATION
-
+----------------------------------------------------
 local ExecuteAllBtn = Instance.new("TextButton")
 ExecuteAllBtn.Size = UDim2.new(0.7,0,0,40)
 ExecuteAllBtn.Position = UDim2.new(0,15,1,-50)
@@ -758,22 +720,22 @@ CloseBtn.MouseButton1Click:Connect(function() MainFrame.Visible = false RoundTog
 RoundToggleBtn.MouseButton1Click:Connect(function() RoundToggleBtn.Visible = false MainFrame.Visible = true end)
 
 local function MakeDraggable(uiElement)
-local dragging, dragInput, dragStart, startPos
-uiElement.InputBegan:Connect(function(input)
-if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-dragging = true dragStart = input.Position startPos = uiElement.Position
-input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
-end
-end)
-uiElement.InputChanged:Connect(function(input)
-if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
-end)
-UserInputService.InputChanged:Connect(function(input)
-if input == dragInput and dragging then
-local delta = input.Position - dragStart
-uiElement.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-end)
+	local dragging, dragInput, dragStart, startPos
+	uiElement.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			dragging = true dragStart = input.Position startPos = uiElement.Position
+			input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+		end
+	end)
+	uiElement.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
+	end)
+	UserInputService.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			local delta = input.Position - dragStart
+			uiElement.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+		end
+	end)
 end
 
 MakeDraggable(MainFrame)
