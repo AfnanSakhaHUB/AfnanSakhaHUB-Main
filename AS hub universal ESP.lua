@@ -546,7 +546,7 @@ local function CreateScriptRow(name, defaultState)
 
 	local Circle = Instance.new("Frame")  
 	Circle.Size = UDim2.new(0,20,0,20)  
-	Circle.Position = defaultStateand UDim2.new(1,-23,0.5,-10) or UDim2.new(0,3,0.5,-10)  
+	Circle.Position = defaultState and UDim2.new(1,-23,0.5,-10) or UDim2.new(0,3,0.5,-10)  
 	Circle.BackgroundColor3 = Color3.fromRGB(255,255,255)  
 	Circle.Parent = ToggleBtn  
 	Instance.new("UICorner", Circle).CornerRadius = UDim.new(0.5,0)  
