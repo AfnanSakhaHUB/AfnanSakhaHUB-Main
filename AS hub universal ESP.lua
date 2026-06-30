@@ -317,54 +317,84 @@ end
 -- MULTI-FUNCTION BILLBOARD ESP ENGINE
 
 local function SetupCharacter(character)
-    local player = Players:GetPlayerFromCharacter(character)
-    local hrp = character:WaitForChild("HumanoidRootPart", 5)
-    local humanoid = character:WaitForChild("Humanoid", 5)
-    
-    if not hrp or not player or player == LocalPlayer then return end
+local function SetupCharacter(character)
+	local player = Players:GetPlayerFromCharacter(character)
+	local humanoid = character:WaitForChild("Humanoid", 5)
+	local hrp = character:WaitForChild("HumanoidRootPart", 5)
+	
+	if not humanoid or not hrp or not player or player == LocalPlayer then return end
 
-    -- Bersihkan ESP lama jika ada
-    if hrp:FindFirstChild("PlayerBoxESP") then hrp.PlayerBoxESP:Destroy() end
+	-- Bersihkan jika ada sisa ESP lama
+	local oldBox = hrp:FindFirstChild("PlayerBoxESP")
+	if oldBox then oldBox:Destroy() end
 
-    -- Create Billboard
-    local boxBillboard = Instance.new("BillboardGui")
-    boxBillboard.Name = "PlayerBoxESP"
-    boxBillboard.Adornee = hrp -- INI PENTING: Harus diset ke HRP agar menempel
-    boxBillboard.Size = UDim2.new(4, 0, 5, 0)
-    boxBillboard.StudsOffset = Vector3.new(0, 1, 0)
-    boxBillboard.AlwaysOnTop = true
-    boxBillboard.Enabled = true
-    boxBillboard.Parent = hrp
+	-- Master Billboard Gui
+	local boxBillboard = Instance.new("BillboardGui")
+	boxBillboard.Name = "PlayerBoxESP"
+	boxBillboard.Adornee = hrp
+	boxBillboard.Size = UDim2.new(4, 0, 5, 0)
+	boxBillboard.StudsOffset = Vector3.new(0, 0.5, 0)
+	boxBillboard.AlwaysOnTop = true
+	boxBillboard.Enabled = (BoxesEnabled or NameESPEnabled or HealthESPEnabled)
+	boxBillboard.Parent = hrp
 
-    -- 1. BOX
-    local boxFrame = Instance.new("Frame", boxBillboard)
-    boxFrame.Size = UDim2.new(1, 0, 1, 0)
-    boxFrame.BackgroundTransparency = 1
-    boxFrame.Visible = BoxesEnabled
-    local stroke = Instance.new("UIStroke", boxFrame)
-    stroke.Thickness = 2
-    stroke.Color = Color3.fromRGB(255, 255, 255) -- Warna default sementara
+	-- 1. Bounding Box Frame
+	local boxFrame = Instance.new("Frame")
+	boxFrame.Name = "BoxFrame"
+	boxFrame.Size = UDim2.new(1, 0, 1, 0)
+	boxFrame.BackgroundTransparency = 1
+	boxFrame.Visible = BoxesEnabled
+	boxFrame.Parent = boxBillboard
 
-    -- 2. NAME
-    local nameLabel = Instance.new("TextLabel", boxBillboard)
-    nameLabel.Size = UDim2.new(1, 0, 0, 20)
-    nameLabel.Position = UDim2.new(0, 0, -0.2, 0)
-    nameLabel.BackgroundTransparency = 1
-    nameLabel.Text = player.Name
-    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    nameLabel.TextScaled = true
-    nameLabel.Visible = NameESPEnabled
+	local boxStroke = Instance.new("UIStroke")
+	boxStroke.Color = GetActiveColor(player, "Box")
+	boxStroke.Thickness = 2
+	boxStroke.Parent = boxFrame
 
-    -- 3. HEALTH
-    local healthBG = Instance.new("Frame", boxBillboard)
-    healthBG.Size = UDim2.new(0.05, 0, 1, 0)
-    healthBG.Position = UDim2.new(-0.1, 0, 0, 0)
-    healthBG.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-    healthBG.Visible = HealthESPEnabled
-    local healthFill = Instance.new("Frame", healthBG)
-    healthFill.Size = UDim2.new(1, 0, 1, 0)
-    healthFill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-end 
+	-- 2. Name ESP Frame (SUSUNAN & SCALE MILIKMU)  
+	local nameLabel = Instance.new("TextLabel")  
+	nameLabel.Name = "NameLabel"  
+	nameLabel.Size = UDim2.new(1, 0, 0.1, 0)       -- Menggunakan Scale  
+	nameLabel.Position = UDim2.new(0, 0, -0.12, 0)  -- Menggunakan Scale agar pas di atas kepala  
+	nameLabel.BackgroundTransparency = 1  
+	nameLabel.Text = player.Name  
+	nameLabel.TextColor3 = GetActiveColor(player, "Name")  
+	nameLabel.TextSize = 13  
+	nameLabel.Font = Enum.Font.GothamBold  
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Center -- Diubah ke Center agar lebih rapi  
+	nameLabel.TextStrokeTransparency = 0  
+	nameLabel.Visible = NameESPEnabled  
+	nameLabel.Parent = boxBillboard  
+
+	-- 3. Side Vertical Health ESP Bar Background (SUSUNAN & SCALE MILIKMU)  
+	local healthBarBG = Instance.new("Frame")  
+	healthBarBG.Name = "HealthBarBG"  
+	healthBarBG.Size = UDim2.new(0.06, 0, 1, 0)      -- Menggunakan Scale (6% dari lebar kotak)  
+	healthBarBG.Position = UDim2.new(-0.09, 0, 0, 0)  -- Menggunakan Scale (Digeser rapi ke kiri kotak)  
+	healthBarBG.BackgroundColor3 = Color3.fromRGB(30, 30, 30)  
+	healthBarBG.BorderSizePixel = 0  
+	healthBarBG.Visible = HealthESPEnabled  
+	healthBarBG.Parent = boxBillboard
+
+	-- ========================================================
+	-- ISI BAR DARAH (Wajib ada di dalam healthBarBG agar warna darahnya muncul)
+	-- ========================================================
+	local healthBarFill = Instance.new("Frame")
+	healthBarFill.Name = "HealthBarFill"
+	healthBarFill.Size = UDim2.new(1, 0, math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1), 0)
+	healthBarFill.AnchorPoint = Vector2.new(0, 1) -- Pengurangan dari atas ke bawah
+	healthBarFill.Position = UDim2.new(0, 0, 1, 0)
+	healthBarFill.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+	healthBarFill.BorderSizePixel = 0
+	healthBarFill.Parent = healthBarBG
+
+	-- UPDATE ISI DARAH SECARA REALTIME SAAT MUSUH SEKARAT
+	humanoid.HealthChanged:Connect(function()
+		local hpPercent = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
+		healthBarFill.Size = UDim2.new(1, 0, hpPercent, 0)
+		-- Transisi warna: Hijau (Sehat) -> Kuning -> Merah (Sekarat)
+		healthBarFill.BackgroundColor3 = Color3.fromRGB(255, 30, 30):Lerp(Color3.fromRGB(30, 255, 30), hpPercent)
+	end)
 
 local function SetupPlayer(player)
 if player == LocalPlayer then return end
