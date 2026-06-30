@@ -358,21 +358,21 @@ local function CreateScriptRow(rowType, name, configData)
 	end
 end
 
-CreateScriptRow("Toggle", "Circle Lock-On", {
+CreateScriptRow("Toggle", "Aimbot Circle", {
 	Callback = function(isOn)
 		circleEnabled = isOn
 		TargetCircle.Visible = isOn
 	end
 })
 
-CreateScriptRow("Toggle", "Shoot Lock", {
+CreateScriptRow("Toggle", "Aimbot Shoot Button", {
 	Callback = function(isOn)
 		shootLockEnabled = isOn
 		if not isOn then shootLockActiveUntil = 0 end
 	end
 })
 
-CreateScriptRow("Toggle", "Don't Lock to Teammate", {
+CreateScriptRow("Toggle", "Remove Teammate target", {
 	Callback = function(isOn)
 		dontLockTeammate = isOn
 	end
@@ -393,12 +393,12 @@ CreateScriptRow("TextBox", "Circle Radius", {
 
 local colorPresets = {
 	["Cyan Neon"] = Color3.fromRGB(0, 230, 255),
-	["Merah"] = Color3.fromRGB(255, 50, 50),
-	["Hijau"] = Color3.fromRGB(50, 255, 50),
-	["Kuning"] = Color3.fromRGB(255, 255, 50)
+	["Red"] = Color3.fromRGB(255, 50, 50),
+	["Green"] = Color3.fromRGB(50, 255, 50),
+	["Yellow"] = Color3.fromRGB(255, 255, 50)
 }
 CreateScriptRow("Cycle", "Circle Color", {
-	List = {"Cyan Neon", "Merah", "Hijau", "Kuning", "Invisible"}, -- Menambahkan pilihan Invisible
+	List = {"Cyan Neon", "Red", "Green", "Yellow", "Invisible"}, -- Menambahkan pilihan Invisible
 	Callback = function(selectedOption)
 		if selectedOption == "Invisible" then
 			CircleStroke.Transparency = 1 -- Membuat garis lingkaran 100% transparan (tidak terlihat)
