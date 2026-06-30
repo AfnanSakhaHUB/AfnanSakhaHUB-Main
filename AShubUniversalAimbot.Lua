@@ -398,9 +398,14 @@ local colorPresets = {
 	["Kuning"] = Color3.fromRGB(255, 255, 50)
 }
 CreateScriptRow("Cycle", "Circle Color", {
-	List = {"Cyan Neon", "Merah", "Hijau", "Kuning"},
+	List = {"Cyan Neon", "Merah", "Hijau", "Kuning", "Invisible"}, -- Menambahkan pilihan Invisible
 	Callback = function(selectedOption)
-		CircleStroke.Color = colorPresets[selectedOption]
+		if selectedOption == "Invisible" then
+			CircleStroke.Transparency = 1 -- Membuat garis lingkaran 100% transparan (tidak terlihat)
+		else
+			CircleStroke.Transparency = 0 -- Mengembalikan lingkaran agar terlihat kembali
+			CircleStroke.Color = colorPresets[selectedOption] -- Mengubah warna sesuai pilihan
+		end
 	end
 })
 
