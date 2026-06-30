@@ -424,95 +424,122 @@ end)
 -- MAIN CORE RENDER LOOP
 
 RunService.RenderStepped:Connect(function()
-Camera = workspace.CurrentCamera
-local viewportSize = Camera.ViewportSize
-local startPos = Vector2.new(viewportSize.X / 2, viewportSize.Y)
+	Camera = workspace.CurrentCamera
+	local viewportSize = Camera.ViewportSize
+	local startPos = Vector2.new(viewportSize.X / 2, viewportSize.Y)
 
-for _, player in ipairs(Players:GetPlayers()) do  
-	if player ~= LocalPlayer then  
-		local character = player.Character  
-		local hrp = character and character:FindFirstChild("HumanoidRootPart")  
-		local humanoid = character and character:FindFirstChild("Humanoid")  
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player ~= LocalPlayer then
+			local character = player.Character
+			local hrp = character and character:FindFirstChild("HumanoidRootPart")
+			local humanoid = character and character:FindFirstChild("Humanoid")
 
-		-- RUNTIME BILLBOARD RE-COLOR AND SCALE CALCULATIONS  
-		if hrp and humanoid then  
-			local boxESP = hrp:FindFirstChild("PlayerBoxESP")  
-			if boxESP then  
-				boxESP.Enabled = (BoxesEnabled or NameESPEnabled or HealthESPEnabled)  
-				  
-				local bf = boxESP:FindFirstChild("BoxFrame")  
-				if bf then   
-					bf.Visible = BoxesEnabled   
-					local s = bf:FindFirstChildOfClass("UIStroke")  
-					if s then s.Color = GetActiveColor(player, "Box") end  
-				end  
+			--------------------------------------------------
+			-- BILLBOARD ESP UPDATE
+			--------------------------------------------------
+			if hrp and humanoid then
+				local boxESP = hrp:FindFirstChild("PlayerBoxESP")
 
-				local nl = boxESP:FindFirstChild("NameLabel")  
-				if nl then   
-					nl.Visible = NameESPEnabled   
-					nl.TextColor3 = GetActiveColor(player, "Name")  
-				end  
+				if boxESP then
+					boxESP.Enabled = (BoxesEnabled or NameESPEnabled or HealthESPEnabled)
 
-				local hbg = boxESP:FindFirstChild("HealthBarBG")  
-				if hbg then  
-					hbg.Visible = HealthESPEnabled  
-					local hf = hbg:FindFirstChild("HealthBarFill")  
-					if hf then  
-						local hpPercent = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)  
-						hf.Size = UDim2.new(1, 0, hpPercent, 0)  
-						hf.BackgroundColor3 = Color3.fromRGB(255, 30, 30):Lerp(Color3.fromRGB(30, 255, 30), hpPercent)  
-					end  
-				end  
-			end  
-		end  
+					-- BOX
+					local boxFrame = boxESP:FindFirstChild("BoxFrame")
+					if boxFrame then
+						boxFrame.Visible = BoxesEnabled
 
-		-- RUNTIME ADVANCED DYNAMIC TRACERS WITH EDGE CLAMPING  
-		if TracersEnabled and hrp and humanoid and humanoid.Health > 0 then  
-			local screenPos, onScreen = Camera:WorldToViewportPoint(hrp.Position)  
-			  
-			if screenPos.Z < 0 then  
-				local center = viewportSize / 2  
-				local dir = (Vector2.new(screenPos.X, screenPos.Y) - center).Unit  
-				if dir.Magnitude == 0 or tostring(dir.X) == "nan" then dir = Vector2.new(0, 1) end  
-				local farPoint = center - (dir * 2000)  
-				screenPos = Vector3.new(farPoint.X, farPoint.Y, screenPos.Z)  
-			end  
+						local stroke = boxFrame:FindFirstChildOfClass("UIStroke")
+						if stroke then
+							stroke.Color = GetActiveColor(player, "Box")
+						end
+					end
 
-			local padding = 15  
-			local clampedX = math.clamp(screenPos.X, padding, viewportSize.X - padding)  
-			local clampedY = math.clamp(screenPos.Y, padding, viewportSize.Y - padding)  
-			  
-			local endPos = Vector2.new(clampedX, clampedY)  
-			local frame = TracerFrames[player]  
+					-- NAME
+					local nameLabel = boxESP:FindFirstChild("NameLabel")
+					if nameLabel then
+						nameLabel.Visible = NameESPEnabled
+						nameLabel.Text = player.Name
+						nameLabel.TextColor3 = GetActiveColor(player, "Name")
+					end
 
-			if not frame then  
-				frame = Instance.new("Frame")  
-				frame.BorderSizePixel = 0  
-				frame.AnchorPoint = Vector2.new(0.5, 0.5)  
-				frame.Parent = TracerFolder  
-				TracerFrames[player] = frame  
-			end  
+					-- HEALTH
+					local healthBG = boxESP:FindFirstChild("HealthBarBG")
+					if healthBG then
+						healthBG.Visible = HealthESPEnabled
 
-			local distance = (endPos - startPos).Magnitude  
-			frame.Size = UDim2.new(0, distance, 0, 2)  
-			frame.Position = UDim2.new(0, (startPos.X + endPos.X) / 2, 0, (startPos.Y + endPos.Y) / 2)  
-			frame.Rotation = math.deg(math.atan2(endPos.Y - startPos.Y, endPos.X - startPos.X))  
-			frame.BackgroundColor3 = GetActiveColor(player, "Tracer")  
-			frame.Visible = true  
-		else  
-			if TracerFrames[player] then TracerFrames[player].Visible = false end  
-		end  
+						local fill = healthBG:FindFirstChild("HealthBarFill")
+						if fill then
+							local hp = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1)
 
-		-- RUNTIME HIGHLIGHT OUTLINE SYNC  
-		if character and OutlineEnabled then  
-			local hl = character:FindFirstChild("PlayerOutline")  
-			if hl then hl.OutlineColor = GetActiveColor(player, "Outline") end  
-		end  
-	end  
-end
+							fill.Size = UDim2.new(1,0,hp,0)
+							fill.Position = UDim2.new(0,0,1,0)
+							fill.AnchorPoint = Vector2.new(0,1)
 
+							fill.BackgroundColor3 =
+								Color3.fromRGB(255,30,30):Lerp(
+									Color3.fromRGB(30,255,30),
+									hp
+								)
+						end
+					end
+				end
+			end
+
+			--------------------------------------------------
+			-- TRACER
+			--------------------------------------------------
+			if TracersEnabled and hrp and humanoid and humanoid.Health > 0 then
+				local screenPos = Camera:WorldToViewportPoint(hrp.Position)
+
+				local padding = 15
+				local endPos = Vector2.new(
+					math.clamp(screenPos.X, padding, viewportSize.X - padding),
+					math.clamp(screenPos.Y, padding, viewportSize.Y - padding)
+				)
+
+				local frame = TracerFrames[player]
+
+				if not frame then
+					frame = Instance.new("Frame")
+					frame.BorderSizePixel = 0
+					frame.AnchorPoint = Vector2.new(0.5,0.5)
+					frame.Parent = TracerFolder
+					TracerFrames[player] = frame
+				end
+
+				local distance = (endPos - startPos).Magnitude
+
+				frame.Size = UDim2.new(0,distance,0,2)
+				frame.Position = UDim2.new(
+					0,(startPos.X + endPos.X)/2,
+					0,(startPos.Y + endPos.Y)/2
+				)
+
+				frame.Rotation = math.deg(math.atan2(
+					endPos.Y - startPos.Y,
+					endPos.X - startPos.X
+				))
+
+				frame.BackgroundColor3 = GetActiveColor(player,"Tracer")
+				frame.Visible = true
+			else
+				if TracerFrames[player] then
+					TracerFrames[player].Visible = false
+				end
+			end
+
+			--------------------------------------------------
+			-- OUTLINE
+			--------------------------------------------------
+			if character and OutlineEnabled then
+				local hl = character:FindFirstChild("PlayerOutline")
+				if hl then
+					hl.OutlineColor = GetActiveColor(player,"Outline")
+				end
+			end
+		end
+	end
 end)
-
 
 ---
 
