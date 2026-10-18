@@ -959,41 +959,58 @@ local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerListGui = nil
 
--- Fungsi Eksekusi Teleportasi yang Ditingkatkan
-local function teleportToTargetPlayer(targetPlayer)
-    if not targetPlayer then return end
-    
+-- Fungsi Pendeteksi Posisi Target (Mendukung Segala Jenis Rig/Model Karakter)
+local function getPlayerPosition(targetPlayer)
+    if not targetPlayer then return nil end
     local targetChar = targetPlayer.Character
-    local targetHrp = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
-    
+    if not targetChar then return nil end
+
+    -- 1. Cek CFrame/Pivot Utama Karakter (Metode paling ampuh di Roblox modern)
+    local isPivot, targetCFrame = pcall(function()
+        return targetChar:GetPivot()
+    end)
+    if isPivot and targetCFrame then
+        return targetCFrame
+    end
+
+    -- 2. Fallback: Cek Part Utama Karakter secara manual
+    local root = targetChar:FindFirstChild("HumanoidRootPart") 
+              or targetChar:FindFirstChild("Torso") 
+              or targetChar:FindFirstChild("UpperTorso") 
+              or targetChar:FindFirstChild("Head")
+
+    if root and root:IsA("BasePart") then
+        return root.CFrame
+    end
+
+    return nil
+end
+
+-- Fungsi Eksekusi Teleportasi
+local function teleportToTargetPlayer(targetPlayer)
+    local targetCFrame = getPlayerPosition(targetPlayer)
+    if not targetCFrame then return end
+
     local myChar = player.Character
-    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-    local myHumanoid = myChar and myChar:FindFirstChildOfClass("Humanoid")
+    if not myChar then return end
+
+    local myHrp = myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso")
     
-    if targetHrp and myChar then
-        -- Menentukan target posisi (3 studs di atas pemain tujuan agar tidak stuck)
-        local targetCFrame = targetHrp.CFrame * CFrame.new(0, 3, 0)
-        
-        -- Cek apakah kita sedang mengendarai kendaraan
-        if myHumanoid and myHumanoid.SeatPart then
-            local seat = myHumanoid.SeatPart
-            local vehicleModel = seat:FindFirstAncestorOfClass("Model")
-            
-            if vehicleModel then
-                -- Teleportasi seluruh kendaraan jika berada di dalam kendaraan
-                vehicleModel:PivotTo(targetCFrame)
-            else
-                -- Fallback jika part kendaraan tidak memiliki parent Model lengkap
-                seat.CFrame = targetCFrame
-            end
-        else
-            -- Teleportasi karakter biasa (tanpa kendaraan)
-            myChar:PivotTo(targetCFrame)
-        end
+    -- Tentukan koordinat baru (diberi sedikit jarak 3 studs ke atas agar tidak nyangkut)
+    local destination = targetCFrame + Vector3.new(0, 3, 0)
+
+    -- Eksekusi Teleportasi Karakter
+    pcall(function()
+        myChar:PivotTo(destination)
+    end)
+    
+    if myHrp then
+        myHrp.CFrame = destination
+        myHrp.AssemblyLinearVelocity = Vector3.zero
     end
 end
 
--- Fungsi UI Pemilihan Player
+-- UI Pemilihan Player
 local function openPlayerListUI()
     if playerListGui then
         playerListGui:Destroy()
@@ -1008,8 +1025,8 @@ local function openPlayerListUI()
     playerListGui.Parent = playerGui
     
     local frame = Instance.new("Frame")
-    frame.Size = UDim2.new(0, 220, 0, 300)
-    frame.Position = UDim2.new(0.5, -110, 0.5, -150)
+    frame.Size = UDim2.new(0, 230, 0, 300)
+    frame.Position = UDim2.new(0.5, -115, 0.5, -150)
     frame.BackgroundColor3 = Color3.fromRGB(20, 22, 30)
     frame.BackgroundTransparency = 0.1
     frame.BorderSizePixel = 0
@@ -1021,7 +1038,7 @@ local function openPlayerListUI()
     
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, 0, 0, 35)
-    title.Text = "👥 SELECT PLAYER TO TP"
+    title.Text = "👥 PILIH PLAYER UNTUK TP"
     title.TextColor3 = Color3.fromRGB(0, 200, 255)
     title.TextSize = 13
     title.Font = Enum.Font.SourceSansBold
@@ -1041,15 +1058,16 @@ local function openPlayerListUI()
     listLayout.Padding = UDim.new(0, 5)
     listLayout.Parent = scrollingFrame
     
-    -- Menampilkan daftar semua pemain di server (kecuali diri sendiri)
+    local playerFound = false
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player then
+            playerFound = true
             local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(1, 0, 0, 30)
+            btn.Size = UDim2.new(1, 0, 0, 32)
             btn.Text = p.DisplayName .. " (@" .. p.Name .. ")"
             btn.TextColor3 = Color3.fromRGB(255, 255, 255)
             btn.BackgroundColor3 = Color3.fromRGB(40, 45, 60)
-            btn.Font = Enum.Font.SourceSans
+            btn.Font = Enum.Font.SourceSansBold
             btn.TextSize = 13
             btn.Parent = scrollingFrame
             
@@ -1063,6 +1081,18 @@ local function openPlayerListUI()
                 playerListGui = nil
             end)
         end
+    end
+    
+    -- Jika tidak ada pemain lain di server
+    if not playerFound then
+        local emptyLabel = Instance.new("TextLabel")
+        emptyLabel.Size = UDim2.new(1, 0, 0, 30)
+        emptyLabel.Text = "Tidak ada pemain lain di server"
+        emptyLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+        emptyLabel.Font = Enum.Font.SourceSansItalic
+        emptyLabel.TextSize = 12
+        emptyLabel.BackgroundTransparency = 1
+        emptyLabel.Parent = scrollingFrame
     end
 end
 
