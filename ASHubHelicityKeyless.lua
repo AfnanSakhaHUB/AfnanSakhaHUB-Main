@@ -931,11 +931,12 @@ local function teleportToTornado()
         local vel = closestObj.data.velocity
         local dir = Vector3.new(vel.X, 0, vel.Z)
         if dir.Magnitude < 0.1 then
-            dir = Vector3.new(0, 0, 1)
+            dir = Vector3.new(0, 0, 1) -- Default arah depan jika tornado diam
         else
             dir = dir.Unit
         end
         
+        -- Teleport 1000 studs tepat di depan arah pergerakan tornado
         local targetPos = tPos + (dir * 1000) + Vector3.new(0, 10, 0)
         
         local humanoid = char:FindFirstChildOfClass("Humanoid")
