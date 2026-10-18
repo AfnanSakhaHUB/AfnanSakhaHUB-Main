@@ -982,9 +982,33 @@ local function getSafeGroundPosition(targetPos)
     end
 end
 
--- ===================================================
--- FUNGSI FIX: TELEPORT TO TORNADO (DI DEPAN JALUR GERAK)
--- ===================================================
+--// ===================================================
+--// TP TO TORNADO (1000 STUDS IN FRONT - CLEAN)
+--// ===================================================
+
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local camera = Workspace.CurrentCamera
+
+-- Sistem Raycast Tanah untuk Ketinggian TP
+local function getSafeGroundPosition(targetPos)
+    local rayOrigin = Vector3.new(targetPos.X, 2000, targetPos.Z)
+    local rayDirection = Vector3.new(0, -4000, 0)
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.IgnoreWater = true
+    if player.Character then raycastParams.FilterDescendantsInstances = {player.Character} end
+    local result = Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+    if result then
+        return result.Position + Vector3.new(0, 5, 0)
+    else
+        return targetPos + Vector3.new(0, 10, 0)
+    end
+end
+
+-- Teleport ke DEPAN Jalur Gerak Tornado (1000 Studs)
 local function teleportToTornado()
     local char = player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -993,9 +1017,8 @@ local function teleportToTornado()
     local closestObj = nil
     local minDist = math.huge
     local tornadoPos = nil
-    local moveDir = Vector3.new(0, 0, 1)
+    local moveDir = Vector3.new(0, 0, -1)
     
-    -- Scan langsung ke dalam Workspace agar tornado jarak jauh tetap terdeteksi
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj.Name == "Tornado" and (obj:IsA("BasePart") or obj:IsA("Model")) then
             local pos = obj:IsA("Model") and obj:GetPivot().Position or obj.Position
@@ -1011,26 +1034,20 @@ local function teleportToTornado()
     if closestObj and tornadoPos then
         local primaryPart = closestObj:IsA("Model") and (closestObj.PrimaryPart or closestObj:FindFirstChildWhichIsA("BasePart")) or closestObj
         local vel = Vector3.zero
-        
-        if primaryPart and primaryPart:IsA("BasePart") then
-            vel = primaryPart.AssemblyLinearVelocity
+        if primaryPart and primaryPart:IsA("BasePart") then 
+            vel = primaryPart.AssemblyLinearVelocity 
         end
         
         local velXZ = Vector3.new(vel.X, 0, vel.Z)
-        
-        -- Tentukan arah tujuannya: Prioritaskan vektor kecepatan (velocity), 
-        -- jika tornado sedang diam, gunakan arah hadap depan model (LookVector)
         if velXZ.Magnitude > 0.5 then
             moveDir = velXZ.Unit
-        elseif closestObj:IsA("Model") then
-            local look = closestObj:GetPivot().LookVector
-            moveDir = Vector3.new(look.X, 0, look.Z).Unit
+        else
+            local camLook = camera.CFrame.LookVector
+            moveDir = Vector3.new(camLook.X, 0, camLook.Z).Unit
         end
         
-        -- 1000 Studs tepat di depan arah pergerakan tornado (menyongsong jalur tujuannya)
+        -- POSISI UTAMA: Tepat 1000 Studs DI DEPAN arah gerak tornado
         local rawTargetPos = tornadoPos + (moveDir * 1000)
-        
-        -- Sesuaikan otomatis dengan ketinggian permukaan tanah (Anti melayang / nyelip)
         local safeTargetPos = getSafeGroundPosition(rawTargetPos)
         
         local targetPart = hrp
@@ -1046,7 +1063,7 @@ local function teleportToTornado()
         
         targetPart.CFrame = CFrame.new(safeTargetPos)
     end
-end 
+end
 
 -- ===================================================
 -- FUNGSI FIX: TELEPORT TO PLAYER (STABIL & AMAN)
