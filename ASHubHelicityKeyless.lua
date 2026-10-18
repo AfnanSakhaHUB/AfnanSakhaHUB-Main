@@ -824,8 +824,20 @@ end)
 -- ===================================================
 -- LOGIKA INTERCEPTOR MODE (SOLID MUTLAK SPEED 0)
 -- ===================================================
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+local interceptorEnabled = false
+local lockedCFrame = nil
+
+-- Logika Penguncian Mutlak (Tanpa bisa bergerak sedikit pun)
 RunService.Heartbeat:Connect(function()
-    if not interceptorEnabled then return end
+    if not interceptorEnabled then 
+        lockedCFrame = nil
+        return 
+    end
     
     local character = player.Character
     if not character then return end
@@ -834,6 +846,7 @@ RunService.Heartbeat:Connect(function()
     local humanoid = character:FindFirstChildOfClass("Humanoid")
     local targetPart = hrp
     
+    -- Mendukung karakter maupun saat sedang duduk di dalam kendaraan
     if humanoid and humanoid.SeatPart then
         local seat = humanoid.SeatPart
         if seat.Parent and seat.Parent:IsA("Model") then
@@ -842,6 +855,13 @@ RunService.Heartbeat:Connect(function()
     end
     
     if targetPart then
+        -- Simpan posisi awal saat pertama kali Interceptor diaktifkan
+        if not lockedCFrame then
+            lockedCFrame = targetPart.CFrame
+        end
+        
+        -- Kunci mati posisi dan rotasi secara mutlak (tidak bisa digeser angin/gravitasi)
+        targetPart.CFrame = lockedCFrame
         targetPart.AssemblyLinearVelocity = Vector3.zero
         targetPart.AssemblyAngularVelocity = Vector3.zero
     end
