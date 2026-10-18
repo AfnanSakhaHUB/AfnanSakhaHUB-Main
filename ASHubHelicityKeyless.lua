@@ -1018,10 +1018,128 @@ local function teleportToTargetPlayer(targetPlayer)
     targetPart.CFrame = CFrame.new(safeTargetPos)
 end
 
---// ===================================================
---// FITUR: TELEPORT TO PLAYER (STANDALONE & FIXED)
---// ===================================================
+-- ===================================================
+-- FUNGSI BANTUAN: DETEKSI PERMUKAAN TANAH (RAYCAST)
+-- ===================================================
+local function getSafeGroundPosition(targetPos)
+    local rayOrigin = Vector3.new(targetPos.X, 2000, targetPos.Z)
+    local rayDirection = Vector3.new(0, -4000, 0)
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.IgnoreWater = true
+    
+    if player.Character then
+        raycastParams.FilterDescendantsInstances = {player.Character}
+    end
+    
+    local result = Workspace:Raycast(rayOrigin, rayDirection, raycastParams)
+    if result then
+        -- Mengembalikan posisi permukaan tanah ditambah 5 studs ke atas agar aman
+        return result.Position + Vector3.new(0, 5, 0)
+    else
+        return targetPos + Vector3.new(0, 10, 0)
+    end
+end
 
+-- ===================================================
+-- FUNGSI FIX: TELEPORT TO TORNADO (JARAK JAUH & KETINGGIAN)
+-- ===================================================
+local function teleportToTornado()
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    local closestObj = nil
+    local minDist = math.huge
+    local tornadoPos = nil
+    local tornadoVel = Vector3.zero
+    
+    -- Scan langsung ke dalam Workspace agar tornado jauh tetap terdeteksi
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj.Name == "Tornado" and (obj:IsA("BasePart") or obj:IsA("Model")) then
+            local pos = obj:IsA("Model") and obj:GetPivot().Position or obj.Position
+            local dist = (pos - hrp.Position).Magnitude
+            if dist < minDist then
+                minDist = dist
+                closestObj = obj
+                tornadoPos = pos
+            end
+        end
+    end
+    
+    if closestObj and tornadoPos then
+        local primaryPart = closestObj:IsA("Model") and (closestObj.PrimaryPart or closestObj:FindFirstChildWhichIsA("BasePart")) or closestObj
+        if primaryPart and primaryPart:IsA("BasePart") then
+            tornadoVel = primaryPart.AssemblyLinearVelocity
+        end
+        
+        local dir = Vector3.new(tornadoVel.X, 0, tornadoVel.Z)
+        if dir.Magnitude < 0.5 then
+            dir = Vector3.new(0, 0, 1)
+        else
+            dir = dir.Unit
+        end
+        
+        -- 1000 Studs di depan arah pergerakan tornado
+        local rawTargetPos = tornadoPos + (dir * 1000)
+        
+        -- Sesuaikan otomatis dengan ketinggian permukaan tanah
+        local safeTargetPos = getSafeGroundPosition(rawTargetPos)
+        
+        local targetPart = hrp
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid and humanoid.SeatPart then
+            local seat = humanoid.SeatPart
+            local model = seat:FindFirstAncestorOfClass("Model")
+            if model then
+                model:PivotTo(CFrame.new(safeTargetPos))
+                return
+            end
+        end
+        
+        targetPart.CFrame = CFrame.new(safeTargetPos)
+    end
+end
+
+-- ===================================================
+-- FUNGSI FIX: TELEPORT TO PLAYER (STABIL & AMAN)
+-- ===================================================
+local function teleportToTargetPlayer(targetPlayer)
+    if not targetPlayer or not targetPlayer.Character then return end
+    
+    local targetChar = targetPlayer.Character
+    local targetHrp = targetChar:FindFirstChild("HumanoidRootPart") 
+                   or targetChar:FindFirstChild("Torso") 
+                   or targetChar:FindFirstChild("UpperTorso")
+                   
+    if not targetHrp then return end
+    
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    -- Ambil posisi target dan ratakan dengan ketinggian tanah di sekitarnya
+    local rawTargetPos = targetHrp.Position
+    local safeTargetPos = getSafeGroundPosition(rawTargetPos)
+    
+    local targetPart = hrp
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.SeatPart then
+        local seat = humanoid.SeatPart
+        local model = seat:FindFirstAncestorOfClass("Model")
+        if model then
+            model:PivotTo(CFrame.new(safeTargetPos))
+            return
+        end
+    end
+    
+    targetPart.CFrame = CFrame.new(safeTargetPos)
+end
+
+-- ===================================================
+-- UI PEMILIHAN PEMAIN (TP TO PLAYER)
+-- ===================================================
 local function openPlayerListUI()
     if playerListGui then
         playerListGui:Destroy()
@@ -1048,7 +1166,7 @@ local function openPlayerListUI()
     corner.Parent = frame
     
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(1, 0, 0, 35)
+    title.Size = UDim2.new(1,0,0,35)
     title.Text = "👥 PILIH PLAYER UNTUK TP"
     title.TextColor3 = Color3.fromRGB(0, 200, 255)
     title.TextSize = 13
