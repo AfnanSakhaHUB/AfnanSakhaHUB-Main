@@ -929,38 +929,51 @@ end)
 -- FUNGSI TELEPORT TO TORNADO (~1000 Studs di Depan)
 -- ===================================================
 local function teleportToTornado()
-    local closestObj = nil
-    local minDist = math.huge
     local char = player.Character
     local hrp = char and char:FindFirstChild("HumanoidRootPart")
     if not hrp then return end
     
-    for obj, data in pairs(activeTornadoes) do
-        if obj and obj.Parent then
+    local closestObj = nil
+    local minDist = math.huge
+    local tornadoPos = nil
+    local tornadoVel = Vector3.zero
+    
+    -- Scan langsung ke dalam Workspace (Meskipun tornado jauh/baru muncul)
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj.Name == "Tornado" and (obj:IsA("BasePart") or obj:IsA("Model")) then
             local pos = obj:IsA("Model") and obj:GetPivot().Position or obj.Position
             local dist = (pos - hrp.Position).Magnitude
             if dist < minDist then
                 minDist = dist
-                closestObj = {pos = pos, data = data}
+                closestObj = obj
+                tornadoPos = pos
             end
         end
     end
     
-    if closestObj then
-        local tPos = closestObj.pos
-        local vel = closestObj.data.velocity
-        local dir = Vector3.new(vel.X, 0, vel.Z)
-        if dir.Magnitude < 0.1 then
-            dir = Vector3.new(0, 0, 1) -- Default arah depan jika tornado diam
+    if closestObj and tornadoPos then
+        -- Coba estimasi kecepatan tornado jika memiliki bagian fisik
+        local primaryPart = closestObj:IsA("Model") and (closestObj.PrimaryPart or closestObj:FindFirstChildWhichIsA("BasePart")) or closestObj
+        if primaryPart and primaryPart:IsA("BasePart") then
+            tornadoVel = primaryPart.AssemblyLinearVelocity
+        end
+        
+        local dir = Vector3.new(tornadoVel.X, 0, tornadoVel.Z)
+        if dir.Magnitude < 0.5 then
+            dir = Vector3.new(0, 0, 1) -- Arah default jika tornado diam
         else
             dir = dir.Unit
         end
         
-        -- Teleport 1000 studs tepat di depan arah pergerakan tornado
-        local targetPos = tPos + (dir * 1000) + Vector3.new(0, 10, 0)
+        -- Hitung titik target: 1000 studs di depan arah gerak tornado
+        local rawTargetPos = tornadoPos + (dir * 1000)
         
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        -- Sesuaikan ketinggian secara otomatis berdasarkan permukaan tanah (Anti melayang/nyelip)
+        local safeTargetPos = getSafeGroundPosition(rawTargetPos)
+        
+        -- Eksekusi Teleportasi
         local targetPart = hrp
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
         if humanoid and humanoid.SeatPart then
             local seat = humanoid.SeatPart
             if seat.Parent and seat.Parent:IsA("Model") then
@@ -968,70 +981,47 @@ local function teleportToTornado()
             end
         end
         
-        targetPart.CFrame = CFrame.new(targetPos)
+        targetPart.CFrame = CFrame.new(safeTargetPos)
     end
+end
+
+-- ===================================================
+-- 2. FUNGSI TELEPORT TO PLAYER (FIX KETINGGIAN & TARGET)
+-- ===================================================
+local function teleportToTargetPlayer(targetPlayer)
+    if not targetPlayer or not targetPlayer.Character then return end
+    
+    local targetChar = targetPlayer.Character
+    local targetHrp = targetChar:FindFirstChild("HumanoidRootPart") 
+                   or targetChar:FindFirstChild("Torso") 
+                   or targetChar:FindFirstChild("UpperTorso")
+                   
+    if not targetHrp then return end
+    
+    local char = player.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    
+    -- Ambil posisi target, lalu ratakan dengan permukaan tanah di bawahnya agar tidak melayang di udara
+    local rawTargetPos = targetHrp.Position
+    local safeTargetPos = getSafeGroundPosition(rawTargetPos)
+    
+    local targetPart = hrp
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.SeatPart then
+        local seat = humanoid.SeatPart
+        if seat.Parent and seat.Parent:IsA("Model") then
+            targetPart = seat.Parent.PrimaryPart or seat
+        end
+    end
+    
+    targetPart.CFrame = CFrame.new(safeTargetPos)
 end
 
 --// ===================================================
 --// FITUR: TELEPORT TO PLAYER (STANDALONE & FIXED)
 --// ===================================================
 
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local playerListGui = nil
-
--- Fungsi Pendeteksi Posisi Target (Mendukung Segala Jenis Rig/Model Karakter)
-local function getPlayerPosition(targetPlayer)
-    if not targetPlayer then return nil end
-    local targetChar = targetPlayer.Character
-    if not targetChar then return nil end
-
-    -- 1. Cek CFrame/Pivot Utama Karakter (Metode paling ampuh di Roblox modern)
-    local isPivot, targetCFrame = pcall(function()
-        return targetChar:GetPivot()
-    end)
-    if isPivot and targetCFrame then
-        return targetCFrame
-    end
-
-    -- 2. Fallback: Cek Part Utama Karakter secara manual
-    local root = targetChar:FindFirstChild("HumanoidRootPart") 
-              or targetChar:FindFirstChild("Torso") 
-              or targetChar:FindFirstChild("UpperTorso") 
-              or targetChar:FindFirstChild("Head")
-
-    if root and root:IsA("BasePart") then
-        return root.CFrame
-    end
-
-    return nil
-end
-
--- Fungsi Eksekusi Teleportasi
-local function teleportToTargetPlayer(targetPlayer)
-    local targetCFrame = getPlayerPosition(targetPlayer)
-    if not targetCFrame then return end
-
-    local myChar = player.Character
-    if not myChar then return end
-
-    local myHrp = myChar:FindFirstChild("HumanoidRootPart") or myChar:FindFirstChild("Torso")
-    
-    -- Tentukan koordinat baru (diberi sedikit jarak 3 studs ke atas agar tidak nyangkut)
-    local destination = targetCFrame + Vector3.new(0, 3, 0)
-
-    -- Eksekusi Teleportasi Karakter
-    pcall(function()
-        myChar:PivotTo(destination)
-    end)
-    
-    if myHrp then
-        myHrp.CFrame = destination
-        myHrp.AssemblyLinearVelocity = Vector3.zero
-    end
-end
-
--- UI Pemilihan Player
 local function openPlayerListUI()
     if playerListGui then
         playerListGui:Destroy()
@@ -1079,10 +1069,8 @@ local function openPlayerListUI()
     listLayout.Padding = UDim.new(0, 5)
     listLayout.Parent = scrollingFrame
     
-    local playerFound = false
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player then
-            playerFound = true
             local btn = Instance.new("TextButton")
             btn.Size = UDim2.new(1, 0, 0, 32)
             btn.Text = p.DisplayName .. " (@" .. p.Name .. ")"
@@ -1102,18 +1090,6 @@ local function openPlayerListUI()
                 playerListGui = nil
             end)
         end
-    end
-    
-    -- Jika tidak ada pemain lain di server
-    if not playerFound then
-        local emptyLabel = Instance.new("TextLabel")
-        emptyLabel.Size = UDim2.new(1, 0, 0, 30)
-        emptyLabel.Text = "Tidak ada pemain lain di server"
-        emptyLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
-        emptyLabel.Font = Enum.Font.SourceSansItalic
-        emptyLabel.TextSize = 12
-        emptyLabel.BackgroundTransparency = 1
-        emptyLabel.Parent = scrollingFrame
     end
 end
 
